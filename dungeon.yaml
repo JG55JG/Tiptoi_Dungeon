@@ -1,0 +1,3182 @@
+product-id: 950
+
+init: $x_range := 10 $y_range := 10
+welcome: willkommen
+language: de
+media-path: Audio/%s    
+
+scripts:
+    # Definition von Dungeon 1 + Startfeld + Initialisierung einer Zufallszahl für eventuelle Ereignisse
+    # Die Variablen (kanten_pos) enthalten jeweils die Information für 16 Kanten
+    dungeon1:
+    - $dungeon :=1 $old_field:= 1 $x_dung := 1 $y_dung := 1 $first := 1 J(reset_dungeon) P(nichts)
+    dungeon1_2:
+    - $first == 0?  T($rnd7,65535) $rnd7*=25173 $rnd7+=13849 $rnd8 := $rnd7 $first :=1  J(dungeon1_2) P(nichts)
+    - $first == 1? $first := 2 $kanten_pos1:=4085 $kanten_pos2:=24448 $kanten_pos3:=64512 $kanten_pos4:=41471 J(dungeon1_2) P(nichts)
+    - $first == 2? $first := 3 $kanten_pos5:=3770 $kanten_pos6:=4224 $kanten_pos7:=1504 $kanten_pos8:=1792 J(dungeon1_2) P(nichts)
+    - $kanten_pos9:=512 $dungeon_stack :=  0 $first := 0 P(dung_1)
+    
+    
+    dungeon2:
+     - $dungeon :=2 $old_field:= 61 $x_dung := 7 $y_dung := 1 $first := 1 J(reset_dungeon) P(nichts)
+    dungeon2_2:   
+    - $first == 0?  T($rnd7,65535) $rnd7*=25173 $rnd7+=13849 $rnd8 := $rnd7 $first :=1  J(dungeon2_2) P(nichts)
+    - $first == 1? $first := 2 $kanten_pos10:=256 $kanten_pos9:=256 $kanten_pos8:=1396 $kanten_pos7:=1024 J(dungeon2_2) P(nichts)
+    - $kanten_pos5:=49152 $kanten_pos6:=21 $kanten_pos4:=16384 $kanten_pos1:=704 $dungeon_stack :=  0 $first := 0 P(dung_2)
+    
+   
+
+
+    
+    # um Ereignisse im Dungeon 1 zu triggern (Gegner, Türen, Portale, Schalter, usw)
+    # In diesem Beispiel erscheint eine Ratte wenn man Feld 2 betritt
+    dungeon_fun1:
+    - $old_field == 2? $dungeon_stack  == 1? J(dungeon_check) P(nichts)
+    - $old_field == 2? $dungeon_stack  := 1   $fight:=1 $active_y_foe := 10 $active_x_foe := 5 $old_field_foe := 50 J(rat) P(auf_feld_50)
+    - J(dungeon_check) P(nichts)
+    
+    
+    dungeon_fun2:
+    # test1 ratte gestartet  , test2 schatz gefunden $test3 schalter
+    - $test1 := $dungeon_stack $test2 := $dungeon_stack $test1 &= 1 $test2 &= 2 $test3 := $dungeon_stack $test3 &= 4 J(dungeon_fun2_2) P(nichts)
+    dungeon_fun2_2:
+    - $old_field == 62? $test3 == 0? J(dungeon_check) P(info_dung2)
+    - $old_field == 63? $test1  == 0? $dungeon_stack += 1  $fight:=1 $active_y_foe := 6 $active_x_foe := 7 $old_field_foe := 66 J(rat) P(auf_feld_66)
+    - $old_field == 72? $test1  == 0? $dungeon_stack += 1  $fight:=1 $active_y_foe := 6 $active_x_foe := 7 $old_field_foe := 66 J(rat) P(auf_feld_66)
+    - $old_field == 81? $old_field := 5 $x_dung := 1 $y_dung := 5 $old_field_storage := $old_field  P(teleport) J(dungeon_check) P(5)
+    - $old_field == 14? $old_field := 46 $x_dung := 5 $y_dung := 6 $old_field_storage := $old_field  P(teleport) J(dungeon_check) P(46)
+    - $old_field == 45? $test2 == 0? $dungeon_stack += 2 J(dungeon_check) P(schatz)
+    - $old_field == 33? $test3 == 0? $dungeon_stack += 4 $kanten_pos7 += 4 J(dungeon_check) P(schalter)
+    - $old_field == 52? $test3 == 0? J(dungeon_check) P(info_dung2_2)
+    - $old_field == 61? $test2 == 0? J(dungeon_check) P(info_dung2_3)
+    - $old_field == 61? $test2 >0? P(gewonnen)       
+    - J(dungeon_check) P(nichts)
+    
+    
+    # Definition eines Gegners
+    rat:
+    - $first == 0? $first := 1 $foe_dist := 0 $ansage_nr := 1 $initiave_foe :=100 $foe_dice := 6 J(rat) P(nichts)
+    - $first == 1? $damage_foe := 1 $life_foe := 4 $foe :=1$foe_armor := 0 $first := 2 J(rat) P(nichts)
+    - $first == 2? $first := 3 $foe_weapon_value :=2 $foe_special_move1 := 4 $special_move1 := 1 $damage_foe2 := 3 J(rat) P(nichts)
+    - $first := 0 $special_move_times := 2 $escp_foe := 0 $ini := 2 J(distance_fight) P(ratte_erscheint)
+    
+   
+    
+    # falls ein Gegner vorhanden ist wird nach jedem Zug automatisch der Gegnerzug gestartet
+    dungeon_check:
+    - $fight == 1? $test5 := $rnd7 $test5 %= 2 $ini := 1 J(distance_fight) P(nichts)
+
+    # Berechnung der Distanz zueinander. Für z.B. Waffen mit unterschiedlicher Reichweite. (nur für direkte Sichtlinie, Angriff um die Ecke nicht möglich)
+    distance_fight:
+    - $ini == 1? $x_dung == $active_x_foe? $y_dung == $active_y_foe? $dist := 0 J(foe_selection) P(nichts) # Spieler und Gegner auf dem selben Feld
+    - $ini == 2? $x_dung == $active_x_foe? $y_dung == $active_y_foe? $dungeon ==2? P(verloren)
+    - $ini == 2? $x_dung == $active_x_foe? $y_dung == $active_y_foe? $dist := 0 P(spieler_dran)        # Spieler und Gegner auf dem selben Feld
+    # Distanz auf x-Achse
+    - $first == 0? $x_dung >= $active_x_foe? $one := $x_dung $one -= $active_x_foef $first := 1 J(distance_fight) P(nichts)
+    - $first == 0? $one := $active_x_foe $one -= $x_dung $first := 1 J(distance_fight) P(nichts)
+    # Distanz auf y-Achse
+    - $first == 1? $y_dung >= $active_y_foe? $two := $y_dung $two -= $active_y_foe  $first := 2 J(distance_fight) P(nichts)
+    - $first == 1? $two := $active_y_foe $two -= $y_dung  $first := 2 J(distance_fight) P(nichts)
+    # Finale Distanz
+    - $first == 2? $one == 0? $dist := $two   $first := 3 J(distance_fight) P(nichts)
+    - $first == 2? $two == 0? $dist := $one  $first := 3 J(distance_fight) P(nichts)
+    - $first == 2? $dist := 999 $first := 3 J(distance_fight) P(nichts) # keine direkte Sichtlinie
+    # Eigener oder Gegnerzug...
+    - $ini == 1? $first := 0 J(foe_selection) P(nichts)
+    - $ini == 2? $first := 0 P(spieler_dran)
+   
+    # Entscheidung des Gegners über Bewegung, Flucht, normaler Angriff oder Spezialattacke
+    foe_selection:
+    - $dist > $foe_dist? $test2 := 0 $old_field := $old_field_foe J(random_move) P(nichts)
+    - P(selbes_Feld) # nur für Demo
+    
+    random_move:
+    - $test2 == 2? $ini := 2 $old_field := $old_field_storage P(spieler_dran)  # alle möglichen Richtungen blockiert
+    - $one > 0? $two > 0? $temp_y_foe := $active_y_foe  $temp_x_foe := $active_x_foe J(random_move2) P(nichts) # 2 mögliche Richtungen
+    - $test2  := 1 $temp_y_foe := $active_y_foe  $temp_x_foe := $active_x_foe J(random_move1) P(nichts) # 1 mögliche Richtung
+    
+    # Bei zwei möglichen Richtungen erfolgt die Bewegung zuerst in Achse mit der größeren Distanz
+    # Bei gleicher Distanz entscheidet der Zufall (test5)
+    random_move2:
+    - $two < $one? $active_x_foe > $x_dung? $temp_x_foe -= 1 $test5 := 1 $one := $two $direction := 1 J(bariere_check) P(nichts) # größere Distanz auf y-Achse oben
+    - $two < $one? $active_x_foe < $x_dung?  $temp_x_foe += 1 $test5 := 1 $one := $two $direction := 2 J(bariere_check) P(nichts) # größere Distanz auf y-Achse unten
+    - $one < $two? $active_y_foe < $y_dung? $test5 := 0 $two := $one $temp_y_foe += 1 $direction := 3 J(bariere_check) P(nichts) # links
+    - $one < $two? $active_y_foe > $y_dung? $test5 := 0 $two := $one $temp_y_foe -= 1 $direction := 4 J(bariere_check) P(nichts) #rechts
+    - $test5 == 0? $active_x_foe > $x_dung? $temp_x_foe -= 1 $test5 := 1  $direction := 1 J(bariere_check) P(nichts) #oben
+    - $test5 == 0? $active_x_foe < $x_dung?  $temp_x_foe += 1 $test5 := 1   $direction := 2 J(bariere_check) P(nichts) #unten
+    - $active_y_foe < $y_dung? $test5 := 0  $temp_y_foe += 1 $direction := 3 J(bariere_check) P(nichts) # links
+    - $active_y_foe > $y_dung? $test5 := 0 $temp_y_foe -= 1 $direction := 4 J(bariere_check) P(nichts) #rechts
+    
+    random_move1:
+    - $active_x_foe > $x_dung?  $temp_x_foe -= 1 $direction := 1 J(bariere_check) P(nichts) #oben
+    - $active_x_foe < $x_dung?  $temp_x_foe += 1 $direction := 2 J(bariere_check) P(nichts) #unten
+    - $active_y_foe < $y_dung?  $temp_y_foe += 1  $direction := 3 J(bariere_check) P(nichts) # links
+    - $active_y_foe > $y_dung?   $temp_y_foe -= 1 $direction := 4 J(bariere_check) P(nichts) #rechts
+    
+    execute_move:
+    - $direction == 1? $active_x_foe -=1 $old_field_foe -= $y_range $old_field := $old_field_storage $ini := 2 J(distance_fight) P(oben_g)
+    - $direction == 2? $active_x_foe +=1 $old_field_foe += $y_range $old_field := $old_field_storage $ini := 2 J(distance_fight) P(unten_g)
+    - $direction == 3? $active_y_foe +=1 $old_field_foe += 1 $old_field := $old_field_storage $ini := 2 J(distance_fight) P(links_g)
+    - $direction == 4? $active_y_foe -=1 $old_field_foe -= 1 $old_field := $old_field_storage $ini := 2 J(distance_fight) P(rechts_g)    
+    
+    # Info über die aktuelle Position des Gegners
+    say_x_foe:
+    - $fight == 0? P(kein_kampf)
+    - $zahl := $old_field_foe J(sag_zahl) P(Position_Gegner_Feld)
+    say_y_foe:
+    - $fight == 0? P(kein_kampf)
+    - $zahl := $old_field_foe J(sag_zahl) P(Position_Gegner_Feld)
+    
+   # Info über die aktuelle Position des Spielers
+    say_x_fight:
+    - $dungeon == 0? P(kein_dungeon)
+    - $ini == 1? $zahl := $old_field_storage J(sag_zahl) P(Position_Spieler_Feld)
+    - $zahl := $old_field J(sag_zahl) P(Position_Spieler_Feld)
+    say_y_fight:
+    - $dungeon == 0? P(kein_dungeon)
+    - $ini == 1? $zahl := $old_field_storage J(sag_zahl) P(Position_Spieler_Feld)
+    - $zahl := $old_field J(sag_zahl) P(Position_Spieler_Feld)
+    
+    
+    # Definition des 10x10 Spielfelds
+    feld_201_201:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 1? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $rnd8 %= $test $k_pos1 := $kanten_pos1 J(feld_201_201) P(nichts)
+    - $old_field == 2? $k_pos1  &= 1 $first := 0   J(feld_201_201_1) P(nichts)
+    - $old_field == 11? $k_pos1  &= 2 $first := 0 J(feld_201_201_2) P(nichts)
+    - $first := 0 P(too_far)
+    feld_201_201_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 1 $field := 1 $x_dung := 1 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_201_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 1 $field := 1 $x_dung := 1 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_202:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 2? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos1 J(feld_201_202) P(nichts)
+    - $old_field == 3?  $k_pos1  &= 4  $first := 0 J(feld_201_202_1) P(nichts)
+    - $old_field == 12? $k_pos1  &= 8 $first := 0  J(feld_201_202_2) P(nichts)
+    - $old_field == 1? $k_pos1  &= 1 $first := 0   J(feld_201_202_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_201_202_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 2 $field := 1 $x_dung := 1 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_202_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 2 $field := 1 $x_dung := 1 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_202_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 2 $field := 1 $x_dung := 1 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_203:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 3? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos1 J(feld_201_203) P(nichts)
+    - $old_field == 4?  $k_pos1  &= 16  $first := 0 J(feld_201_203_1) P(nichts)
+    - $old_field == 13? $k_pos1  &= 32 $first := 0  J(feld_201_203_2) P(nichts)
+    - $old_field == 2? $k_pos1  &= 4 $first := 0   J(feld_201_203_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_201_203_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 3 $field := 1 $x_dung := 1 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_203_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 3 $field := 1 $x_dung := 1 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_203_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 3 $field := 1 $x_dung := 1 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_204:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 4? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos1 J(feld_201_204) P(nichts)
+    - $old_field == 5?  $k_pos1  &= 64  $first := 0 J(feld_201_204_1) P(nichts)
+    - $old_field == 14? $k_pos1  &= 128 $first := 0  J(feld_201_204_2) P(nichts)
+    - $old_field == 3? $k_pos1  &= 16 $first := 0   J(feld_201_204_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_201_204_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 4 $field := 1 $x_dung := 1 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_204_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 4 $field := 1 $x_dung := 1 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_204_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 4 $field := 1 $x_dung := 1 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_205:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 5? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos1 J(feld_201_205) P(nichts)
+    - $old_field == 6?  $k_pos1  &= 256  $first := 0 J(feld_201_205_1) P(nichts)
+    - $old_field == 15? $k_pos1  &= 512 $first := 0  J(feld_201_205_2) P(nichts)
+    - $old_field == 4? $k_pos1  &= 64 $first := 0   J(feld_201_205_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_201_205_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 5 $field := 1 $x_dung := 1 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_205_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 5 $field := 1 $x_dung := 1 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_205_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 5 $field := 1 $x_dung := 1 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_206:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 6? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos1 J(feld_201_206) P(nichts)
+    - $old_field == 7?  $k_pos1  &= 1024  $first := 0 J(feld_201_206_1) P(nichts)
+    - $old_field == 16? $k_pos1  &= 2048 $first := 0  J(feld_201_206_2) P(nichts)
+    - $old_field == 5? $k_pos1  &= 256 $first := 0   J(feld_201_206_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_201_206_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 6 $field := 1 $x_dung := 1 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_206_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 6 $field := 1 $x_dung := 1 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_206_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 6 $field := 1 $x_dung := 1 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_207:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 7? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos1 J(feld_201_207) P(nichts)
+    - $old_field == 8?  $k_pos1  &= 4096  $first := 0 J(feld_201_207_1) P(nichts)
+    - $old_field == 17? $k_pos1  &= 8192 $first := 0  J(feld_201_207_2) P(nichts)
+    - $old_field == 6? $k_pos1  &= 1024 $first := 0   J(feld_201_207_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_201_207_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 7 $field := 1 $x_dung := 1 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_207_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 7 $field := 1 $x_dung := 1 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_207_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 7 $field := 1 $x_dung := 1 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_208:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 8? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos1 J(feld_201_208) P(nichts)
+    - $old_field == 9?  $k_pos1  &= 16384  $first := 0 J(feld_201_208_1) P(nichts)
+    - $old_field == 18? $k_pos1  &= 32768 $first := 0  J(feld_201_208_2) P(nichts)
+    - $old_field == 7? $k_pos1  &= 4096 $first := 0   J(feld_201_208_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_201_208_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 8 $field := 1 $x_dung := 1 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_208_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 8 $field := 1 $x_dung := 1 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_208_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 8 $field := 1 $x_dung := 1 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_209:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 9? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos2 $k_pos2 := $kanten_pos1 J(feld_201_209) P(nichts)
+    - $old_field == 10?  $k_pos1  &= 1  $first := 0 J(feld_201_209_1) P(nichts)
+    - $old_field == 19? $k_pos1  &= 2 $first := 0  J(feld_201_209_2) P(nichts)
+    - $old_field == 8? $k_pos2  &= 16384 $first := 0   J(feld_201_209_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_201_209_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 9 $field := 1 $x_dung := 1 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_209_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 9 $field := 1 $x_dung := 1 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_209_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 9 $field := 1 $x_dung := 1 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_210:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 10? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos2 J(feld_201_210) P(nichts)
+    - $old_field == 20? $k_pos1  &= 4 $first := 0  J(feld_201_210_1) P(nichts)
+    - $old_field == 9? $k_pos1  &= 1  $first := 0   J(feld_201_210_2) P(nichts)
+    - $first := 0 P(too_far)
+    feld_201_210_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 10 $field := 1 $x_dung := 1 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_201_210_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 10 $field := 1 $x_dung := 1 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_201:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 11? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos2 $k_pos2 := $kanten_pos1 J(feld_202_201) P(nichts)
+    - $old_field == 12?  $k_pos1  &= 8  $first := 0   J(feld_202_201_1) P(nichts)
+    - $old_field == 21?  $k_pos1  &= 16  $first := 0  J(feld_202_201_2) P(nichts)
+    - $old_field == 1?  $k_pos2  &= 2  $first := 0   J(feld_202_201_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_202_201_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 11 $field := 1 $x_dung := 2 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_201_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 11 $field := 1 $x_dung := 2 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_201_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 11 $field := 1 $x_dung := 2 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_202:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 12? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos2 $k_pos2 := $kanten_pos1 J(feld_202_202) P(nichts)
+    - $old_field == 13?  $k_pos1  &= 32  $first := 0   J(feld_202_202_1) P(nichts)
+    - $old_field == 22?  $k_pos1  &= 64  $first := 0  J(feld_202_202_2) P(nichts)
+    - $old_field == 11?  $k_pos1  &= 8  $first := 0   J(feld_202_202_3) P(nichts)
+    - $old_field == 2?  $k_pos2  &= 8  $first := 0   J(feld_202_202_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_202_202_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 12 $field := 1 $x_dung := 2 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_202_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 12 $field := 1 $x_dung := 2 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_202_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 12 $field := 1 $x_dung := 2 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_202_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 12 $field := 1 $x_dung := 2 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_203:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 13? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos2 $k_pos2 := $kanten_pos1 J(feld_202_203) P(nichts)
+    - $old_field == 14?  $k_pos1  &= 128  $first := 0   J(feld_202_203_1) P(nichts)
+    - $old_field == 23?  $k_pos1  &= 256  $first := 0  J(feld_202_203_2) P(nichts)
+    - $old_field == 12?  $k_pos1  &= 32  $first := 0   J(feld_202_203_3) P(nichts)
+    - $old_field == 3?  $k_pos2  &= 32  $first := 0   J(feld_202_203_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_202_203_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 13 $field := 1 $x_dung := 2 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_203_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 13 $field := 1 $x_dung := 2 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_203_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 13 $field := 1 $x_dung := 2 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_203_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 13 $field := 1 $x_dung := 2 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_204:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 14? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos2 $k_pos2 := $kanten_pos1 J(feld_202_204) P(nichts)
+    - $old_field == 15?  $k_pos1  &= 512  $first := 0   J(feld_202_204_1) P(nichts)
+    - $old_field == 24?  $k_pos1  &= 1024  $first := 0  J(feld_202_204_2) P(nichts)
+    - $old_field == 13?  $k_pos1  &= 128  $first := 0   J(feld_202_204_3) P(nichts)
+    - $old_field == 4?  $k_pos2  &= 128  $first := 0   J(feld_202_204_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_202_204_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 14 $field := 1 $x_dung := 2 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_204_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 14 $field := 1 $x_dung := 2 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_204_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 14 $field := 1 $x_dung := 2 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_204_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 14 $field := 1 $x_dung := 2 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_205:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 15? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos2 $k_pos2 := $kanten_pos1 J(feld_202_205) P(nichts)
+    - $old_field == 16?  $k_pos1  &= 2048  $first := 0   J(feld_202_205_1) P(nichts)
+    - $old_field == 25?  $k_pos1  &= 4096  $first := 0  J(feld_202_205_2) P(nichts)
+    - $old_field == 14?  $k_pos1  &= 512  $first := 0   J(feld_202_205_3) P(nichts)
+    - $old_field == 5?  $k_pos2  &= 512  $first := 0   J(feld_202_205_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_202_205_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 15 $field := 1 $x_dung := 2 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_205_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 15 $field := 1 $x_dung := 2 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_205_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 15 $field := 1 $x_dung := 2 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_205_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 15 $field := 1 $x_dung := 2 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_206:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 16? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos2 $k_pos2 := $kanten_pos1 J(feld_202_206) P(nichts)
+    - $old_field == 17?  $k_pos1  &= 8192  $first := 0   J(feld_202_206_1) P(nichts)
+    - $old_field == 26?  $k_pos1  &= 16384  $first := 0  J(feld_202_206_2) P(nichts)
+    - $old_field == 15?  $k_pos1  &= 2048  $first := 0   J(feld_202_206_3) P(nichts)
+    - $old_field == 6?  $k_pos2  &= 2048  $first := 0   J(feld_202_206_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_202_206_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 16 $field := 1 $x_dung := 2 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_206_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 16 $field := 1 $x_dung := 2 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_206_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 16 $field := 1 $x_dung := 2 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_206_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 16 $field := 1 $x_dung := 2 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_207:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 17? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos2 $k_pos2 := $kanten_pos3 $k_pos3 := $kanten_pos1 J(feld_202_207) P(nichts)
+    - $old_field == 18?  $k_pos1  &= 32768  $first := 0   J(feld_202_207_1) P(nichts)
+    - $old_field == 27?  $k_pos2  &= 1  $first := 0  J(feld_202_207_2) P(nichts)
+    - $old_field == 16?  $k_pos1  &= 8192  $first := 0   J(feld_202_207_3) P(nichts)
+    - $old_field == 7?  $k_pos2  &= 8192  $first := 0   J(feld_202_207_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_202_207_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 17 $field := 1 $x_dung := 2 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_207_2:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 17 $field := 1 $x_dung := 2 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_207_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 17 $field := 1 $x_dung := 2 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_207_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 17 $field := 1 $x_dung := 2 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_208:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 18? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos3 $k_pos2 := $kanten_pos2 $k_pos3 := $kanten_pos1 J(feld_202_208) P(nichts)
+    - $old_field == 19?  $k_pos1  &= 2  $first := 0   J(feld_202_208_1) P(nichts)
+    - $old_field == 28?  $k_pos1  &= 4  $first := 0  J(feld_202_208_2) P(nichts)
+    - $old_field == 17?  $k_pos2  &= 32768  $first := 0   J(feld_202_208_3) P(nichts)
+    - $old_field == 8?  $k_pos3  &= 32768  $first := 0   J(feld_202_208_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_202_208_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 18 $field := 1 $x_dung := 2 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_208_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 18 $field := 1 $x_dung := 2 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_208_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 18 $field := 1 $x_dung := 2 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_208_4:
+    - $ini == 1? $k_pos3 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos3 >0? $old_field := 18 $field := 1 $x_dung := 2 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_209:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 19? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos3 $k_pos2 := $kanten_pos2 J(feld_202_209) P(nichts)
+    - $old_field == 20?  $k_pos1  &= 8  $first := 0   J(feld_202_209_1) P(nichts)
+    - $old_field == 29?  $k_pos1  &= 16  $first := 0  J(feld_202_209_2) P(nichts)
+    - $old_field == 18?  $k_pos1  &= 2  $first := 0   J(feld_202_209_3) P(nichts)
+    - $old_field == 9?  $k_pos2  &= 2  $first := 0   J(feld_202_209_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_202_209_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 19 $field := 1 $x_dung := 2 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_209_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 19 $field := 1 $x_dung := 2 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_209_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 19 $field := 1 $x_dung := 2 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_209_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 19 $field := 1 $x_dung := 2 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_210:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 20? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos3 $k_pos2 := $kanten_pos2 J(feld_202_210) P(nichts)
+    - $old_field == 30?  $k_pos1  &= 32  $first := 0   J(feld_202_210_1) P(nichts)
+    - $old_field == 19? $k_pos1  &= 8  $first := 0   J(feld_202_210_2) P(nichts)
+    - $old_field == 10?  $k_pos2  &= 4 $first := 0   J(feld_202_210_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_202_210_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 20 $field := 1 $x_dung := 2 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_210_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 20 $field := 1 $x_dung := 2 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_202_210_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 20 $field := 1 $x_dung := 2 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_201:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 21? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos3 $k_pos2 := $kanten_pos2 J(feld_203_201) P(nichts)
+    - $old_field == 22?  $k_pos1  &= 64  $first := 0   J(feld_203_201_1) P(nichts)
+    - $old_field == 31?  $k_pos1  &= 128  $first := 0  J(feld_203_201_2) P(nichts)
+    - $old_field == 11?  $k_pos2  &= 16  $first := 0   J(feld_203_201_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_203_201_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 21 $field := 1 $x_dung := 3 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_201_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 21 $field := 1 $x_dung := 3 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_201_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 21 $field := 1 $x_dung := 3 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_202:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 22? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos3 $k_pos2 := $kanten_pos2 J(feld_203_202) P(nichts)
+    - $old_field == 23?  $k_pos1  &= 256  $first := 0   J(feld_203_202_1) P(nichts)
+    - $old_field == 32?  $k_pos1  &= 512  $first := 0  J(feld_203_202_2) P(nichts)
+    - $old_field == 21?  $k_pos1  &= 64  $first := 0   J(feld_203_202_3) P(nichts)
+    - $old_field == 12?  $k_pos2  &= 64  $first := 0   J(feld_203_202_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_203_202_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 22 $field := 1 $x_dung := 3 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_202_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 22 $field := 1 $x_dung := 3 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_202_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 22 $field := 1 $x_dung := 3 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_202_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 22 $field := 1 $x_dung := 3 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_203:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 23? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos3 $k_pos2 := $kanten_pos2 J(feld_203_203) P(nichts)
+    - $old_field == 24?  $k_pos1  &= 1024  $first := 0   J(feld_203_203_1) P(nichts)
+    - $old_field == 33?  $k_pos1  &= 2048  $first := 0  J(feld_203_203_2) P(nichts)
+    - $old_field == 22?  $k_pos1  &= 256  $first := 0   J(feld_203_203_3) P(nichts)
+    - $old_field == 13?  $k_pos2  &= 256  $first := 0   J(feld_203_203_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_203_203_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 23 $field := 1 $x_dung := 3 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_203_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 23 $field := 1 $x_dung := 3 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_203_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 23 $field := 1 $x_dung := 3 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_203_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 23 $field := 1 $x_dung := 3 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_204:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 24? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos3 $k_pos2 := $kanten_pos2 J(feld_203_204) P(nichts)
+    - $old_field == 25?  $k_pos1  &= 4096  $first := 0   J(feld_203_204_1) P(nichts)
+    - $old_field == 34?  $k_pos1  &= 8192  $first := 0  J(feld_203_204_2) P(nichts)
+    - $old_field == 23?  $k_pos1  &= 1024  $first := 0   J(feld_203_204_3) P(nichts)
+    - $old_field == 14?  $k_pos2  &= 1024  $first := 0   J(feld_203_204_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_203_204_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 24 $field := 1 $x_dung := 3 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_204_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 24 $field := 1 $x_dung := 3 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_204_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 24 $field := 1 $x_dung := 3 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_204_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 24 $field := 1 $x_dung := 3 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_205:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 25? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos3 $k_pos2 := $kanten_pos2 J(feld_203_205) P(nichts)
+    - $old_field == 26?  $k_pos1  &= 16384  $first := 0   J(feld_203_205_1) P(nichts)
+    - $old_field == 35?  $k_pos1  &= 32768  $first := 0  J(feld_203_205_2) P(nichts)
+    - $old_field == 24?  $k_pos1  &= 4096  $first := 0   J(feld_203_205_3) P(nichts)
+    - $old_field == 15?  $k_pos2  &= 4096  $first := 0   J(feld_203_205_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_203_205_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 25 $field := 1 $x_dung := 3 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_205_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 25 $field := 1 $x_dung := 3 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_205_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 25 $field := 1 $x_dung := 3 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_205_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 25 $field := 1 $x_dung := 3 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_206:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 26? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos4 $k_pos2 := $kanten_pos3 $k_pos3 := $kanten_pos2 J(feld_203_206) P(nichts)
+    - $old_field == 27?  $k_pos1  &= 1  $first := 0   J(feld_203_206_1) P(nichts)
+    - $old_field == 36?  $k_pos1  &= 2  $first := 0  J(feld_203_206_2) P(nichts)
+    - $old_field == 25?  $k_pos2  &= 16384  $first := 0   J(feld_203_206_3) P(nichts)
+    - $old_field == 16?  $k_pos3  &= 16384  $first := 0   J(feld_203_206_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_203_206_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 26 $field := 1 $x_dung := 3 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_206_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 26 $field := 1 $x_dung := 3 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_206_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 26 $field := 1 $x_dung := 3 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_206_4:
+    - $ini == 1? $k_pos3 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos3 >0? $old_field := 26 $field := 1 $x_dung := 3 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_207:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 27? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos4 $k_pos2 := $kanten_pos3 J(feld_203_207) P(nichts)
+    - $old_field == 28?  $k_pos1  &= 4  $first := 0   J(feld_203_207_1) P(nichts)
+    - $old_field == 37?  $k_pos1  &= 8  $first := 0  J(feld_203_207_2) P(nichts)
+    - $old_field == 26?  $k_pos1  &= 1  $first := 0   J(feld_203_207_3) P(nichts)
+    - $old_field == 17?  $k_pos2  &= 1  $first := 0   J(feld_203_207_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_203_207_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 27 $field := 1 $x_dung := 3 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_207_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 27 $field := 1 $x_dung := 3 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_207_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 27 $field := 1 $x_dung := 3 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_207_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 27 $field := 1 $x_dung := 3 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_208:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 28? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos4 $k_pos2 := $kanten_pos3 J(feld_203_208) P(nichts)
+    - $old_field == 29?  $k_pos1  &= 16  $first := 0   J(feld_203_208_1) P(nichts)
+    - $old_field == 38?  $k_pos1  &= 32  $first := 0  J(feld_203_208_2) P(nichts)
+    - $old_field == 27?  $k_pos1  &= 4  $first := 0   J(feld_203_208_3) P(nichts)
+    - $old_field == 18?  $k_pos2  &= 4  $first := 0   J(feld_203_208_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_203_208_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 28 $field := 1 $x_dung := 3 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_208_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 28 $field := 1 $x_dung := 3 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_208_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 28 $field := 1 $x_dung := 3 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_208_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 28 $field := 1 $x_dung := 3 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_209:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 29? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos4 $k_pos2 := $kanten_pos3 J(feld_203_209) P(nichts)
+    - $old_field == 30?  $k_pos1  &= 64  $first := 0   J(feld_203_209_1) P(nichts)
+    - $old_field == 39?  $k_pos1  &= 128  $first := 0  J(feld_203_209_2) P(nichts)
+    - $old_field == 28?  $k_pos1  &= 16  $first := 0   J(feld_203_209_3) P(nichts)
+    - $old_field == 19?  $k_pos2  &= 16  $first := 0   J(feld_203_209_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_203_209_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 29 $field := 1 $x_dung := 3 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_209_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 29 $field := 1 $x_dung := 3 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_209_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 29 $field := 1 $x_dung := 3 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_209_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 29 $field := 1 $x_dung := 3 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_210:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 30? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos4 $k_pos2 := $kanten_pos3 J(feld_203_210) P(nichts)
+    - $old_field == 40?  $k_pos1  &= 256  $first := 0   J(feld_203_210_1) P(nichts)
+    - $old_field == 29? $k_pos1  &= 64  $first := 0   J(feld_203_210_2) P(nichts)
+    - $old_field == 20?  $k_pos2  &= 32 $first := 0   J(feld_203_210_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_203_210_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 30 $field := 1 $x_dung := 3 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_210_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 30 $field := 1 $x_dung := 3 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_203_210_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 30 $field := 1 $x_dung := 3 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_201:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 31? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos4 $k_pos2 := $kanten_pos3 J(feld_204_201) P(nichts)
+    - $old_field == 32?  $k_pos1  &= 512  $first := 0   J(feld_204_201_1) P(nichts)
+    - $old_field == 41?  $k_pos1  &= 1024  $first := 0  J(feld_204_201_2) P(nichts)
+    - $old_field == 21?  $k_pos2  &= 128  $first := 0   J(feld_204_201_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_204_201_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 31 $field := 1 $x_dung := 4 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_201_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 31 $field := 1 $x_dung := 4 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_201_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 31 $field := 1 $x_dung := 4 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_202:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 32? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos4 $k_pos2 := $kanten_pos3 J(feld_204_202) P(nichts)
+    - $old_field == 33?  $k_pos1  &= 2048  $first := 0   J(feld_204_202_1) P(nichts)
+    - $old_field == 42?  $k_pos1  &= 4096  $first := 0  J(feld_204_202_2) P(nichts)
+    - $old_field == 31?  $k_pos1  &= 512  $first := 0   J(feld_204_202_3) P(nichts)
+    - $old_field == 22?  $k_pos2  &= 512  $first := 0   J(feld_204_202_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_204_202_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 32 $field := 1 $x_dung := 4 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_202_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 32 $field := 1 $x_dung := 4 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_202_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 32 $field := 1 $x_dung := 4 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_202_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 32 $field := 1 $x_dung := 4 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_203:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 33? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos4 $k_pos2 := $kanten_pos3 J(feld_204_203) P(nichts)
+    - $old_field == 34?  $k_pos1  &= 8192  $first := 0   J(feld_204_203_1) P(nichts)
+    - $old_field == 43?  $k_pos1  &= 16384  $first := 0  J(feld_204_203_2) P(nichts)
+    - $old_field == 32?  $k_pos1  &= 2048  $first := 0   J(feld_204_203_3) P(nichts)
+    - $old_field == 23?  $k_pos2  &= 2048  $first := 0   J(feld_204_203_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_204_203_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 33 $field := 1 $x_dung := 4 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_203_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 33 $field := 1 $x_dung := 4 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_203_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 33 $field := 1 $x_dung := 4 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_203_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 33 $field := 1 $x_dung := 4 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_204:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 34? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos4 $k_pos2 := $kanten_pos5 $k_pos3 := $kanten_pos3 J(feld_204_204) P(nichts)
+    - $old_field == 35?  $k_pos1  &= 32768  $first := 0   J(feld_204_204_1) P(nichts)
+    - $old_field == 44?  $k_pos2  &= 1  $first := 0  J(feld_204_204_2) P(nichts)
+    - $old_field == 33?  $k_pos1  &= 8192  $first := 0   J(feld_204_204_3) P(nichts)
+    - $old_field == 24?  $k_pos2  &= 8192  $first := 0   J(feld_204_204_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_204_204_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 34 $field := 1 $x_dung := 4 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_204_2:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 34 $field := 1 $x_dung := 4 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_204_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 34 $field := 1 $x_dung := 4 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_204_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 34 $field := 1 $x_dung := 4 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_205:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 35? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos5 $k_pos2 := $kanten_pos4 $k_pos3 := $kanten_pos3 J(feld_204_205) P(nichts)
+    - $old_field == 36?  $k_pos1  &= 2  $first := 0   J(feld_204_205_1) P(nichts)
+    - $old_field == 45?  $k_pos1  &= 4  $first := 0  J(feld_204_205_2) P(nichts)
+    - $old_field == 34?  $k_pos2  &= 32768  $first := 0   J(feld_204_205_3) P(nichts)
+    - $old_field == 25?  $k_pos3  &= 32768  $first := 0   J(feld_204_205_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_204_205_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 35 $field := 1 $x_dung := 4 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_205_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 35 $field := 1 $x_dung := 4 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_205_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 35 $field := 1 $x_dung := 4 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_205_4:
+    - $ini == 1? $k_pos3 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos3 >0? $old_field := 35 $field := 1 $x_dung := 4 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_206:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 36? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos5 $k_pos2 := $kanten_pos4 J(feld_204_206) P(nichts)
+    - $old_field == 37?  $k_pos1  &= 8  $first := 0   J(feld_204_206_1) P(nichts)
+    - $old_field == 46?  $k_pos1  &= 16  $first := 0  J(feld_204_206_2) P(nichts)
+    - $old_field == 35?  $k_pos1  &= 2  $first := 0   J(feld_204_206_3) P(nichts)
+    - $old_field == 26?  $k_pos2  &= 2  $first := 0   J(feld_204_206_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_204_206_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 36 $field := 1 $x_dung := 4 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_206_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 36 $field := 1 $x_dung := 4 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_206_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 36 $field := 1 $x_dung := 4 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_206_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 36 $field := 1 $x_dung := 4 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_207:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 37? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos5 $k_pos2 := $kanten_pos4 J(feld_204_207) P(nichts)
+    - $old_field == 38?  $k_pos1  &= 32  $first := 0   J(feld_204_207_1) P(nichts)
+    - $old_field == 47?  $k_pos1  &= 64  $first := 0  J(feld_204_207_2) P(nichts)
+    - $old_field == 36?  $k_pos1  &= 8  $first := 0   J(feld_204_207_3) P(nichts)
+    - $old_field == 27?  $k_pos2  &= 8  $first := 0   J(feld_204_207_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_204_207_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 37 $field := 1 $x_dung := 4 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_207_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 37 $field := 1 $x_dung := 4 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_207_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 37 $field := 1 $x_dung := 4 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_207_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 37 $field := 1 $x_dung := 4 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_208:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 38? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos5 $k_pos2 := $kanten_pos4 J(feld_204_208) P(nichts)
+    - $old_field == 39?  $k_pos1  &= 128  $first := 0   J(feld_204_208_1) P(nichts)
+    - $old_field == 48?  $k_pos1  &= 256  $first := 0  J(feld_204_208_2) P(nichts)
+    - $old_field == 37?  $k_pos1  &= 32  $first := 0   J(feld_204_208_3) P(nichts)
+    - $old_field == 28?  $k_pos2  &= 32  $first := 0   J(feld_204_208_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_204_208_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 38 $field := 1 $x_dung := 4 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_208_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 38 $field := 1 $x_dung := 4 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_208_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 38 $field := 1 $x_dung := 4 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_208_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 38 $field := 1 $x_dung := 4 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_209:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 39? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos5 $k_pos2 := $kanten_pos4 J(feld_204_209) P(nichts)
+    - $old_field == 40?  $k_pos1  &= 512  $first := 0   J(feld_204_209_1) P(nichts)
+    - $old_field == 49?  $k_pos1  &= 1024  $first := 0  J(feld_204_209_2) P(nichts)
+    - $old_field == 38?  $k_pos1  &= 128  $first := 0   J(feld_204_209_3) P(nichts)
+    - $old_field == 29?  $k_pos2  &= 128  $first := 0   J(feld_204_209_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_204_209_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 39 $field := 1 $x_dung := 4 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_209_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 39 $field := 1 $x_dung := 4 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_209_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 39 $field := 1 $x_dung := 4 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_209_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 39 $field := 1 $x_dung := 4 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_210:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 40? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos5 $k_pos2 := $kanten_pos4 J(feld_204_210) P(nichts)
+    - $old_field == 50?  $k_pos1  &= 2048  $first := 0   J(feld_204_210_1) P(nichts)
+    - $old_field == 39? $k_pos1  &= 512  $first := 0   J(feld_204_210_2) P(nichts)
+    - $old_field == 30?  $k_pos2  &= 256 $first := 0   J(feld_204_210_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_204_210_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 40 $field := 1 $x_dung := 4 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_210_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 40 $field := 1 $x_dung := 4 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_204_210_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 40 $field := 1 $x_dung := 4 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_201:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 41? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos5 $k_pos2 := $kanten_pos4 J(feld_205_201) P(nichts)
+    - $old_field == 42?  $k_pos1  &= 4096  $first := 0   J(feld_205_201_1) P(nichts)
+    - $old_field == 51?  $k_pos1  &= 8192  $first := 0  J(feld_205_201_2) P(nichts)
+    - $old_field == 31?  $k_pos2  &= 1024  $first := 0   J(feld_205_201_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_205_201_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 41 $field := 1 $x_dung := 5 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_201_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 41 $field := 1 $x_dung := 5 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_201_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 41 $field := 1 $x_dung := 5 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_202:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 42? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos5 $k_pos2 := $kanten_pos4 J(feld_205_202) P(nichts)
+    - $old_field == 43?  $k_pos1  &= 16384  $first := 0   J(feld_205_202_1) P(nichts)
+    - $old_field == 52?  $k_pos1  &= 32768  $first := 0  J(feld_205_202_2) P(nichts)
+    - $old_field == 41?  $k_pos1  &= 4096  $first := 0   J(feld_205_202_3) P(nichts)
+    - $old_field == 32?  $k_pos2  &= 4096  $first := 0   J(feld_205_202_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_205_202_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 42 $field := 1 $x_dung := 5 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_202_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 42 $field := 1 $x_dung := 5 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_202_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 42 $field := 1 $x_dung := 5 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_202_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 42 $field := 1 $x_dung := 5 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_203:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 43? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos6 $k_pos2 := $kanten_pos5 $k_pos3 := $kanten_pos4 J(feld_205_203) P(nichts)
+    - $old_field == 44?  $k_pos1  &= 1  $first := 0   J(feld_205_203_1) P(nichts)
+    - $old_field == 53?  $k_pos1  &= 2  $first := 0  J(feld_205_203_2) P(nichts)
+    - $old_field == 42?  $k_pos2  &= 16384  $first := 0   J(feld_205_203_3) P(nichts)
+    - $old_field == 33?  $k_pos3  &= 16384  $first := 0   J(feld_205_203_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_205_203_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 43 $field := 1 $x_dung := 5 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_203_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 43 $field := 1 $x_dung := 5 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_203_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 43 $field := 1 $x_dung := 5 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_203_4:
+    - $ini == 1? $k_pos3 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos3 >0? $old_field := 43 $field := 1 $x_dung := 5 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_204:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 44? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos6 $k_pos2 := $kanten_pos5 J(feld_205_204) P(nichts)
+    - $old_field == 45?  $k_pos1  &= 4  $first := 0   J(feld_205_204_1) P(nichts)
+    - $old_field == 54?  $k_pos1  &= 8  $first := 0  J(feld_205_204_2) P(nichts)
+    - $old_field == 43?  $k_pos1  &= 1  $first := 0   J(feld_205_204_3) P(nichts)
+    - $old_field == 34?  $k_pos2  &= 1  $first := 0   J(feld_205_204_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_205_204_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 44 $field := 1 $x_dung := 5 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_204_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 44 $field := 1 $x_dung := 5 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_204_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 44 $field := 1 $x_dung := 5 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_204_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 44 $field := 1 $x_dung := 5 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_205:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 45? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos6 $k_pos2 := $kanten_pos5 J(feld_205_205) P(nichts)
+    - $old_field == 46?  $k_pos1  &= 16  $first := 0   J(feld_205_205_1) P(nichts)
+    - $old_field == 55?  $k_pos1  &= 32  $first := 0  J(feld_205_205_2) P(nichts)
+    - $old_field == 44?  $k_pos1  &= 4  $first := 0   J(feld_205_205_3) P(nichts)
+    - $old_field == 35?  $k_pos2  &= 4  $first := 0   J(feld_205_205_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_205_205_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 45 $field := 1 $x_dung := 5 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_205_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 45 $field := 1 $x_dung := 5 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_205_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 45 $field := 1 $x_dung := 5 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_205_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 45 $field := 1 $x_dung := 5 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_206:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 46? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos6 $k_pos2 := $kanten_pos5 J(feld_205_206) P(nichts)
+    - $old_field == 47?  $k_pos1  &= 64  $first := 0   J(feld_205_206_1) P(nichts)
+    - $old_field == 56?  $k_pos1  &= 128  $first := 0  J(feld_205_206_2) P(nichts)
+    - $old_field == 45?  $k_pos1  &= 16  $first := 0   J(feld_205_206_3) P(nichts)
+    - $old_field == 36?  $k_pos2  &= 16  $first := 0   J(feld_205_206_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_205_206_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 46 $field := 1 $x_dung := 5 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_206_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 46 $field := 1 $x_dung := 5 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_206_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 46 $field := 1 $x_dung := 5 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_206_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 46 $field := 1 $x_dung := 5 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_207:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 47? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos6 $k_pos2 := $kanten_pos5 J(feld_205_207) P(nichts)
+    - $old_field == 48?  $k_pos1  &= 256  $first := 0   J(feld_205_207_1) P(nichts)
+    - $old_field == 57?  $k_pos1  &= 512  $first := 0  J(feld_205_207_2) P(nichts)
+    - $old_field == 46?  $k_pos1  &= 64  $first := 0   J(feld_205_207_3) P(nichts)
+    - $old_field == 37?  $k_pos2  &= 64  $first := 0   J(feld_205_207_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_205_207_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 47 $field := 1 $x_dung := 5 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_207_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 47 $field := 1 $x_dung := 5 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_207_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 47 $field := 1 $x_dung := 5 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_207_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 47 $field := 1 $x_dung := 5 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_208:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 48? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos6 $k_pos2 := $kanten_pos5 J(feld_205_208) P(nichts)
+    - $old_field == 49?  $k_pos1  &= 1024  $first := 0   J(feld_205_208_1) P(nichts)
+    - $old_field == 58?  $k_pos1  &= 2048  $first := 0  J(feld_205_208_2) P(nichts)
+    - $old_field == 47?  $k_pos1  &= 256  $first := 0   J(feld_205_208_3) P(nichts)
+    - $old_field == 38?  $k_pos2  &= 256  $first := 0   J(feld_205_208_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_205_208_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 48 $field := 1 $x_dung := 5 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_208_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 48 $field := 1 $x_dung := 5 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_208_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 48 $field := 1 $x_dung := 5 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_208_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 48 $field := 1 $x_dung := 5 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_209:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 49? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos6 $k_pos2 := $kanten_pos5 J(feld_205_209) P(nichts)
+    - $old_field == 50?  $k_pos1  &= 4096  $first := 0   J(feld_205_209_1) P(nichts)
+    - $old_field == 59?  $k_pos1  &= 8192  $first := 0  J(feld_205_209_2) P(nichts)
+    - $old_field == 48?  $k_pos1  &= 1024  $first := 0   J(feld_205_209_3) P(nichts)
+    - $old_field == 39?  $k_pos2  &= 1024  $first := 0   J(feld_205_209_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_205_209_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 49 $field := 1 $x_dung := 5 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_209_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 49 $field := 1 $x_dung := 5 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_209_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 49 $field := 1 $x_dung := 5 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_209_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 49 $field := 1 $x_dung := 5 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_210:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 50? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos6 $k_pos2 := $kanten_pos5 J(feld_205_210) P(nichts)
+    - $old_field == 60?  $k_pos1  &= 16384  $first := 0   J(feld_205_210_1) P(nichts)
+    - $old_field == 49? $k_pos1  &= 4096  $first := 0   J(feld_205_210_2) P(nichts)
+    - $old_field == 40?  $k_pos2  &= 2048 $first := 0   J(feld_205_210_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_205_210_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 50 $field := 1 $x_dung := 5 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_210_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 50 $field := 1 $x_dung := 5 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_205_210_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 50 $field := 1 $x_dung := 5 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_201:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 51? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos6 $k_pos2 := $kanten_pos7 $k_pos3 := $kanten_pos5 J(feld_206_201) P(nichts)
+    - $old_field == 52?  $k_pos1  &= 32768  $first := 0   J(feld_206_201_1) P(nichts)
+    - $old_field == 61?  $k_pos2  &= 1  $first := 0  J(feld_206_201_2) P(nichts)
+    - $old_field == 41?  $k_pos3  &= 8192  $first := 0   J(feld_206_201_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_206_201_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 51 $field := 1 $x_dung := 6 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_201_2:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 51 $field := 1 $x_dung := 6 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_201_3:
+    - $ini == 1? $k_pos3 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos3 >0? $old_field := 51 $field := 1 $x_dung := 6 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_202:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 52? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos7 $k_pos2 := $kanten_pos6 $k_pos3 := $kanten_pos5 J(feld_206_202) P(nichts)
+    - $old_field == 53?  $k_pos1  &= 2  $first := 0   J(feld_206_202_1) P(nichts)
+    - $old_field == 62?  $k_pos1  &= 4  $first := 0  J(feld_206_202_2) P(nichts)
+    - $old_field == 51?  $k_pos2  &= 32768  $first := 0   J(feld_206_202_3) P(nichts)
+    - $old_field == 42?  $k_pos3  &= 32768  $first := 0   J(feld_206_202_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_206_202_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 52 $field := 1 $x_dung := 6 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_202_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 52 $field := 1 $x_dung := 6 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_202_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 52 $field := 1 $x_dung := 6 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_202_4:
+    - $ini == 1? $k_pos3 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos3 >0? $old_field := 52 $field := 1 $x_dung := 6 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_203:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 53? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos7 $k_pos2 := $kanten_pos6 J(feld_206_203) P(nichts)
+    - $old_field == 54?  $k_pos1  &= 8  $first := 0   J(feld_206_203_1) P(nichts)
+    - $old_field == 63?  $k_pos1  &= 16  $first := 0  J(feld_206_203_2) P(nichts)
+    - $old_field == 52?  $k_pos1  &= 2  $first := 0   J(feld_206_203_3) P(nichts)
+    - $old_field == 43?  $k_pos2  &= 2  $first := 0   J(feld_206_203_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_206_203_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 53 $field := 1 $x_dung := 6 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_203_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 53 $field := 1 $x_dung := 6 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_203_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 53 $field := 1 $x_dung := 6 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_203_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 53 $field := 1 $x_dung := 6 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_204:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 54? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos7 $k_pos2 := $kanten_pos6 J(feld_206_204) P(nichts)
+    - $old_field == 55?  $k_pos1  &= 32  $first := 0   J(feld_206_204_1) P(nichts)
+    - $old_field == 64?  $k_pos1  &= 64  $first := 0  J(feld_206_204_2) P(nichts)
+    - $old_field == 53?  $k_pos1  &= 8  $first := 0   J(feld_206_204_3) P(nichts)
+    - $old_field == 44?  $k_pos2  &= 8  $first := 0   J(feld_206_204_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_206_204_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 54 $field := 1 $x_dung := 6 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_204_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 54 $field := 1 $x_dung := 6 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_204_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 54 $field := 1 $x_dung := 6 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_204_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 54 $field := 1 $x_dung := 6 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_205:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 55? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos7 $k_pos2 := $kanten_pos6 J(feld_206_205) P(nichts)
+    - $old_field == 56?  $k_pos1  &= 128  $first := 0   J(feld_206_205_1) P(nichts)
+    - $old_field == 65?  $k_pos1  &= 256  $first := 0  J(feld_206_205_2) P(nichts)
+    - $old_field == 54?  $k_pos1  &= 32  $first := 0   J(feld_206_205_3) P(nichts)
+    - $old_field == 45?  $k_pos2  &= 32  $first := 0   J(feld_206_205_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_206_205_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 55 $field := 1 $x_dung := 6 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_205_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 55 $field := 1 $x_dung := 6 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_205_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 55 $field := 1 $x_dung := 6 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_205_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 55 $field := 1 $x_dung := 6 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_206:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 56? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos7 $k_pos2 := $kanten_pos6 J(feld_206_206) P(nichts)
+    - $old_field == 57?  $k_pos1  &= 512  $first := 0   J(feld_206_206_1) P(nichts)
+    - $old_field == 66?  $k_pos1  &= 1024  $first := 0  J(feld_206_206_2) P(nichts)
+    - $old_field == 55?  $k_pos1  &= 128  $first := 0   J(feld_206_206_3) P(nichts)
+    - $old_field == 46?  $k_pos2  &= 128  $first := 0   J(feld_206_206_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_206_206_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 56 $field := 1 $x_dung := 6 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_206_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 56 $field := 1 $x_dung := 6 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_206_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 56 $field := 1 $x_dung := 6 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_206_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 56 $field := 1 $x_dung := 6 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_207:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 57? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos7 $k_pos2 := $kanten_pos6 J(feld_206_207) P(nichts)
+    - $old_field == 58?  $k_pos1  &= 2048  $first := 0   J(feld_206_207_1) P(nichts)
+    - $old_field == 67?  $k_pos1  &= 4096  $first := 0  J(feld_206_207_2) P(nichts)
+    - $old_field == 56?  $k_pos1  &= 512  $first := 0   J(feld_206_207_3) P(nichts)
+    - $old_field == 47?  $k_pos2  &= 512  $first := 0   J(feld_206_207_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_206_207_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 57 $field := 1 $x_dung := 6 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_207_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 57 $field := 1 $x_dung := 6 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_207_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 57 $field := 1 $x_dung := 6 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_207_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 57 $field := 1 $x_dung := 6 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_208:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 58? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos7 $k_pos2 := $kanten_pos6 J(feld_206_208) P(nichts)
+    - $old_field == 59?  $k_pos1  &= 8192  $first := 0   J(feld_206_208_1) P(nichts)
+    - $old_field == 68?  $k_pos1  &= 16384  $first := 0  J(feld_206_208_2) P(nichts)
+    - $old_field == 57?  $k_pos1  &= 2048  $first := 0   J(feld_206_208_3) P(nichts)
+    - $old_field == 48?  $k_pos2  &= 2048  $first := 0   J(feld_206_208_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_206_208_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 58 $field := 1 $x_dung := 6 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_208_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 58 $field := 1 $x_dung := 6 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_208_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 58 $field := 1 $x_dung := 6 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_208_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 58 $field := 1 $x_dung := 6 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_209:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 59? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos7 $k_pos2 := $kanten_pos8 $k_pos3 := $kanten_pos6 J(feld_206_209) P(nichts)
+    - $old_field == 60?  $k_pos1  &= 32768  $first := 0   J(feld_206_209_1) P(nichts)
+    - $old_field == 69?  $k_pos2  &= 1  $first := 0  J(feld_206_209_2) P(nichts)
+    - $old_field == 58?  $k_pos1  &= 8192  $first := 0   J(feld_206_209_3) P(nichts)
+    - $old_field == 49?  $k_pos2  &= 8192  $first := 0   J(feld_206_209_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_206_209_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 59 $field := 1 $x_dung := 6 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_209_2:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 59 $field := 1 $x_dung := 6 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_209_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 59 $field := 1 $x_dung := 6 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_209_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 59 $field := 1 $x_dung := 6 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_210:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 60? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos8 $k_pos2 := $kanten_pos7 $k_pos3 := $kanten_pos6 J(feld_206_210) P(nichts)
+    - $old_field == 70?  $k_pos1  &= 2  $first := 0   J(feld_206_210_1) P(nichts)
+    - $old_field == 59? $k_pos2  &= 32768  $first := 0   J(feld_206_210_2) P(nichts)
+    - $old_field == 50?  $k_pos3  &= 16384 $first := 0   J(feld_206_210_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_206_210_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 60 $field := 1 $x_dung := 6 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_210_2:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 60 $field := 1 $x_dung := 6 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_206_210_3:
+    - $ini == 1? $k_pos3 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos3 >0? $old_field := 60 $field := 1 $x_dung := 6 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_201:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 61? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos8 $k_pos2 := $kanten_pos7 J(feld_207_201) P(nichts)
+    - $old_field == 62?  $k_pos1  &= 4  $first := 0   J(feld_207_201_1) P(nichts)
+    - $old_field == 71?  $k_pos1  &= 8  $first := 0  J(feld_207_201_2) P(nichts)
+    - $old_field == 51?  $k_pos2  &= 1  $first := 0   J(feld_207_201_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_207_201_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 61 $field := 1 $x_dung := 7 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_201_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 61 $field := 1 $x_dung := 7 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_201_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 61 $field := 1 $x_dung := 7 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_202:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 62? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos8 $k_pos2 := $kanten_pos7 J(feld_207_202) P(nichts)
+    - $old_field == 63?  $k_pos1  &= 16  $first := 0   J(feld_207_202_1) P(nichts)
+    - $old_field == 72?  $k_pos1  &= 32  $first := 0  J(feld_207_202_2) P(nichts)
+    - $old_field == 61?  $k_pos1  &= 4  $first := 0   J(feld_207_202_3) P(nichts)
+    - $old_field == 52?  $k_pos2  &= 4  $first := 0   J(feld_207_202_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_207_202_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 62 $field := 1 $x_dung := 7 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_202_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 62 $field := 1 $x_dung := 7 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_202_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 62 $field := 1 $x_dung := 7 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_202_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 62 $field := 1 $x_dung := 7 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_203:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 63? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos8 $k_pos2 := $kanten_pos7 J(feld_207_203) P(nichts)
+    - $old_field == 64?  $k_pos1  &= 64  $first := 0   J(feld_207_203_1) P(nichts)
+    - $old_field == 73?  $k_pos1  &= 128  $first := 0  J(feld_207_203_2) P(nichts)
+    - $old_field == 62?  $k_pos1  &= 16  $first := 0   J(feld_207_203_3) P(nichts)
+    - $old_field == 53?  $k_pos2  &= 16  $first := 0   J(feld_207_203_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_207_203_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 63 $field := 1 $x_dung := 7 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_203_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 63 $field := 1 $x_dung := 7 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_203_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 63 $field := 1 $x_dung := 7 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_203_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 63 $field := 1 $x_dung := 7 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_204:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 64? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos8 $k_pos2 := $kanten_pos7 J(feld_207_204) P(nichts)
+    - $old_field == 65?  $k_pos1  &= 256  $first := 0   J(feld_207_204_1) P(nichts)
+    - $old_field == 74?  $k_pos1  &= 512  $first := 0  J(feld_207_204_2) P(nichts)
+    - $old_field == 63?  $k_pos1  &= 64  $first := 0   J(feld_207_204_3) P(nichts)
+    - $old_field == 54?  $k_pos2  &= 64  $first := 0   J(feld_207_204_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_207_204_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 64 $field := 1 $x_dung := 7 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_204_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 64 $field := 1 $x_dung := 7 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_204_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 64 $field := 1 $x_dung := 7 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_204_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 64 $field := 1 $x_dung := 7 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_205:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 65? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos8 $k_pos2 := $kanten_pos7 J(feld_207_205) P(nichts)
+    - $old_field == 66?  $k_pos1  &= 1024  $first := 0   J(feld_207_205_1) P(nichts)
+    - $old_field == 75?  $k_pos1  &= 2048  $first := 0  J(feld_207_205_2) P(nichts)
+    - $old_field == 64?  $k_pos1  &= 256  $first := 0   J(feld_207_205_3) P(nichts)
+    - $old_field == 55?  $k_pos2  &= 256  $first := 0   J(feld_207_205_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_207_205_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 65 $field := 1 $x_dung := 7 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_205_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 65 $field := 1 $x_dung := 7 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_205_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 65 $field := 1 $x_dung := 7 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_205_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 65 $field := 1 $x_dung := 7 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_206:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 66? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos8 $k_pos2 := $kanten_pos7 J(feld_207_206) P(nichts)
+    - $old_field == 67?  $k_pos1  &= 4096  $first := 0   J(feld_207_206_1) P(nichts)
+    - $old_field == 76?  $k_pos1  &= 8192  $first := 0  J(feld_207_206_2) P(nichts)
+    - $old_field == 65?  $k_pos1  &= 1024  $first := 0   J(feld_207_206_3) P(nichts)
+    - $old_field == 56?  $k_pos2  &= 1024  $first := 0   J(feld_207_206_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_207_206_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 66 $field := 1 $x_dung := 7 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_206_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 66 $field := 1 $x_dung := 7 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_206_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 66 $field := 1 $x_dung := 7 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_206_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 66 $field := 1 $x_dung := 7 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_207:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 67? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos8 $k_pos2 := $kanten_pos7 J(feld_207_207) P(nichts)
+    - $old_field == 68?  $k_pos1  &= 16384  $first := 0   J(feld_207_207_1) P(nichts)
+    - $old_field == 77?  $k_pos1  &= 32768  $first := 0  J(feld_207_207_2) P(nichts)
+    - $old_field == 66?  $k_pos1  &= 4096  $first := 0   J(feld_207_207_3) P(nichts)
+    - $old_field == 57?  $k_pos2  &= 4096  $first := 0   J(feld_207_207_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_207_207_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 67 $field := 1 $x_dung := 7 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_207_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 67 $field := 1 $x_dung := 7 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_207_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 67 $field := 1 $x_dung := 7 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_207_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 67 $field := 1 $x_dung := 7 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_208:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 68? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos9 $k_pos2 := $kanten_pos8 $k_pos3 := $kanten_pos7 J(feld_207_208) P(nichts)
+    - $old_field == 69?  $k_pos1  &= 1  $first := 0   J(feld_207_208_1) P(nichts)
+    - $old_field == 78?  $k_pos1  &= 2  $first := 0  J(feld_207_208_2) P(nichts)
+    - $old_field == 67?  $k_pos2  &= 16384  $first := 0   J(feld_207_208_3) P(nichts)
+    - $old_field == 58?  $k_pos3  &= 16384  $first := 0   J(feld_207_208_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_207_208_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 68 $field := 1 $x_dung := 7 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_208_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 68 $field := 1 $x_dung := 7 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_208_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 68 $field := 1 $x_dung := 7 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_208_4:
+    - $ini == 1? $k_pos3 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos3 >0? $old_field := 68 $field := 1 $x_dung := 7 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_209:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 69? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos9 $k_pos2 := $kanten_pos8 J(feld_207_209) P(nichts)
+    - $old_field == 70?  $k_pos1  &= 4  $first := 0   J(feld_207_209_1) P(nichts)
+    - $old_field == 79?  $k_pos1  &= 8  $first := 0  J(feld_207_209_2) P(nichts)
+    - $old_field == 68?  $k_pos1  &= 1  $first := 0   J(feld_207_209_3) P(nichts)
+    - $old_field == 59?  $k_pos2  &= 1  $first := 0   J(feld_207_209_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_207_209_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 69 $field := 1 $x_dung := 7 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_209_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 69 $field := 1 $x_dung := 7 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_209_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 69 $field := 1 $x_dung := 7 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_209_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 69 $field := 1 $x_dung := 7 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_210:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 70? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos9 $k_pos2 := $kanten_pos8 J(feld_207_210) P(nichts)
+    - $old_field == 80?  $k_pos1  &= 16  $first := 0   J(feld_207_210_1) P(nichts)
+    - $old_field == 69? $k_pos1  &= 4  $first := 0   J(feld_207_210_2) P(nichts)
+    - $old_field == 60?  $k_pos2  &= 2 $first := 0   J(feld_207_210_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_207_210_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 70 $field := 1 $x_dung := 7 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_210_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 70 $field := 1 $x_dung := 7 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_207_210_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 70 $field := 1 $x_dung := 7 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_201:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 71? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos9 $k_pos2 := $kanten_pos8 J(feld_208_201) P(nichts)
+    - $old_field == 72?  $k_pos1  &= 32  $first := 0   J(feld_208_201_1) P(nichts)
+    - $old_field == 81?  $k_pos1  &= 64  $first := 0  J(feld_208_201_2) P(nichts)
+    - $old_field == 61?  $k_pos2  &= 8  $first := 0   J(feld_208_201_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_208_201_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 71 $field := 1 $x_dung := 8 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_201_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 71 $field := 1 $x_dung := 8 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_201_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 71 $field := 1 $x_dung := 8 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_202:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 72? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos9 $k_pos2 := $kanten_pos8 J(feld_208_202) P(nichts)
+    - $old_field == 73?  $k_pos1  &= 128  $first := 0   J(feld_208_202_1) P(nichts)
+    - $old_field == 82?  $k_pos1  &= 256  $first := 0  J(feld_208_202_2) P(nichts)
+    - $old_field == 71?  $k_pos1  &= 32  $first := 0   J(feld_208_202_3) P(nichts)
+    - $old_field == 62?  $k_pos2  &= 32  $first := 0   J(feld_208_202_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_208_202_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 72 $field := 1 $x_dung := 8 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_202_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 72 $field := 1 $x_dung := 8 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_202_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 72 $field := 1 $x_dung := 8 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_202_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 72 $field := 1 $x_dung := 8 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_203:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 73? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos9 $k_pos2 := $kanten_pos8 J(feld_208_203) P(nichts)
+    - $old_field == 74?  $k_pos1  &= 512  $first := 0   J(feld_208_203_1) P(nichts)
+    - $old_field == 83?  $k_pos1  &= 1024  $first := 0  J(feld_208_203_2) P(nichts)
+    - $old_field == 72?  $k_pos1  &= 128  $first := 0   J(feld_208_203_3) P(nichts)
+    - $old_field == 63?  $k_pos2  &= 128  $first := 0   J(feld_208_203_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_208_203_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 73 $field := 1 $x_dung := 8 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_203_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 73 $field := 1 $x_dung := 8 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_203_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 73 $field := 1 $x_dung := 8 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_203_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 73 $field := 1 $x_dung := 8 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_204:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 74? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos9 $k_pos2 := $kanten_pos8 J(feld_208_204) P(nichts)
+    - $old_field == 75?  $k_pos1  &= 2048  $first := 0   J(feld_208_204_1) P(nichts)
+    - $old_field == 84?  $k_pos1  &= 4096  $first := 0  J(feld_208_204_2) P(nichts)
+    - $old_field == 73?  $k_pos1  &= 512  $first := 0   J(feld_208_204_3) P(nichts)
+    - $old_field == 64?  $k_pos2  &= 512  $first := 0   J(feld_208_204_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_208_204_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 74 $field := 1 $x_dung := 8 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_204_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 74 $field := 1 $x_dung := 8 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_204_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 74 $field := 1 $x_dung := 8 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_204_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 74 $field := 1 $x_dung := 8 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_205:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 75? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos9 $k_pos2 := $kanten_pos8 J(feld_208_205) P(nichts)
+    - $old_field == 76?  $k_pos1  &= 8192  $first := 0   J(feld_208_205_1) P(nichts)
+    - $old_field == 85?  $k_pos1  &= 16384  $first := 0  J(feld_208_205_2) P(nichts)
+    - $old_field == 74?  $k_pos1  &= 2048  $first := 0   J(feld_208_205_3) P(nichts)
+    - $old_field == 65?  $k_pos2  &= 2048  $first := 0   J(feld_208_205_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_208_205_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 75 $field := 1 $x_dung := 8 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_205_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 75 $field := 1 $x_dung := 8 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_205_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 75 $field := 1 $x_dung := 8 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_205_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 75 $field := 1 $x_dung := 8 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_206:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 76? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos9 $k_pos2 := $kanten_pos10 $k_pos3 := $kanten_pos8 J(feld_208_206) P(nichts)
+    - $old_field == 77?  $k_pos1  &= 32768  $first := 0   J(feld_208_206_1) P(nichts)
+    - $old_field == 86?  $k_pos2  &= 1  $first := 0  J(feld_208_206_2) P(nichts)
+    - $old_field == 75?  $k_pos1  &= 8192  $first := 0   J(feld_208_206_3) P(nichts)
+    - $old_field == 66?  $k_pos2  &= 8192  $first := 0   J(feld_208_206_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_208_206_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 76 $field := 1 $x_dung := 8 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_206_2:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 76 $field := 1 $x_dung := 8 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_206_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 76 $field := 1 $x_dung := 8 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_206_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 76 $field := 1 $x_dung := 8 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_207:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 77? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos10 $k_pos2 := $kanten_pos9 $k_pos3 := $kanten_pos8 J(feld_208_207) P(nichts)
+    - $old_field == 78?  $k_pos1  &= 2  $first := 0   J(feld_208_207_1) P(nichts)
+    - $old_field == 87?  $k_pos1  &= 4  $first := 0  J(feld_208_207_2) P(nichts)
+    - $old_field == 76?  $k_pos2  &= 32768  $first := 0   J(feld_208_207_3) P(nichts)
+    - $old_field == 67?  $k_pos3  &= 32768  $first := 0   J(feld_208_207_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_208_207_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 77 $field := 1 $x_dung := 8 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_207_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 77 $field := 1 $x_dung := 8 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_207_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 77 $field := 1 $x_dung := 8 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_207_4:
+    - $ini == 1? $k_pos3 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos3 >0? $old_field := 77 $field := 1 $x_dung := 8 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_208:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 78? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos10 $k_pos2 := $kanten_pos9 J(feld_208_208) P(nichts)
+    - $old_field == 79?  $k_pos1  &= 8  $first := 0   J(feld_208_208_1) P(nichts)
+    - $old_field == 88?  $k_pos1  &= 16  $first := 0  J(feld_208_208_2) P(nichts)
+    - $old_field == 77?  $k_pos1  &= 2  $first := 0   J(feld_208_208_3) P(nichts)
+    - $old_field == 68?  $k_pos2  &= 2  $first := 0   J(feld_208_208_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_208_208_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 78 $field := 1 $x_dung := 8 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_208_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 78 $field := 1 $x_dung := 8 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_208_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 78 $field := 1 $x_dung := 8 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_208_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 78 $field := 1 $x_dung := 8 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_209:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 79? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos10 $k_pos2 := $kanten_pos9 J(feld_208_209) P(nichts)
+    - $old_field == 80?  $k_pos1  &= 32  $first := 0   J(feld_208_209_1) P(nichts)
+    - $old_field == 89?  $k_pos1  &= 64  $first := 0  J(feld_208_209_2) P(nichts)
+    - $old_field == 78?  $k_pos1  &= 8  $first := 0   J(feld_208_209_3) P(nichts)
+    - $old_field == 69?  $k_pos2  &= 8  $first := 0   J(feld_208_209_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_208_209_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 79 $field := 1 $x_dung := 8 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_209_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 79 $field := 1 $x_dung := 8 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_209_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 79 $field := 1 $x_dung := 8 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_209_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 79 $field := 1 $x_dung := 8 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_210:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 80? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos10 $k_pos2 := $kanten_pos9 J(feld_208_210) P(nichts)
+    - $old_field == 90?  $k_pos1  &= 128  $first := 0   J(feld_208_210_1) P(nichts)
+    - $old_field == 79? $k_pos1  &= 32  $first := 0   J(feld_208_210_2) P(nichts)
+    - $old_field == 70?  $k_pos2  &= 16 $first := 0   J(feld_208_210_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_208_210_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 80 $field := 1 $x_dung := 8 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_210_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 80 $field := 1 $x_dung := 8 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_208_210_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 80 $field := 1 $x_dung := 8 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_201:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 81? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos10 $k_pos2 := $kanten_pos9 J(feld_209_201) P(nichts)
+    - $old_field == 82?  $k_pos1  &= 256  $first := 0   J(feld_209_201_1) P(nichts)
+    - $old_field == 91?  $k_pos1  &= 512  $first := 0  J(feld_209_201_2) P(nichts)
+    - $old_field == 71?  $k_pos2  &= 64  $first := 0   J(feld_209_201_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_209_201_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 81 $field := 1 $x_dung := 9 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_201_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 81 $field := 1 $x_dung := 9 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_201_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 81 $field := 1 $x_dung := 9 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_202:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 82? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos10 $k_pos2 := $kanten_pos9 J(feld_209_202) P(nichts)
+    - $old_field == 83?  $k_pos1  &= 1024  $first := 0   J(feld_209_202_1) P(nichts)
+    - $old_field == 92?  $k_pos1  &= 2048  $first := 0  J(feld_209_202_2) P(nichts)
+    - $old_field == 81?  $k_pos1  &= 256  $first := 0   J(feld_209_202_3) P(nichts)
+    - $old_field == 72?  $k_pos2  &= 256  $first := 0   J(feld_209_202_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_209_202_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 82 $field := 1 $x_dung := 9 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_202_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 82 $field := 1 $x_dung := 9 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_202_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 82 $field := 1 $x_dung := 9 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_202_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 82 $field := 1 $x_dung := 9 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_203:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 83? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos10 $k_pos2 := $kanten_pos9 J(feld_209_203) P(nichts)
+    - $old_field == 84?  $k_pos1  &= 4096  $first := 0   J(feld_209_203_1) P(nichts)
+    - $old_field == 93?  $k_pos1  &= 8192  $first := 0  J(feld_209_203_2) P(nichts)
+    - $old_field == 82?  $k_pos1  &= 1024  $first := 0   J(feld_209_203_3) P(nichts)
+    - $old_field == 73?  $k_pos2  &= 1024  $first := 0   J(feld_209_203_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_209_203_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 83 $field := 1 $x_dung := 9 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_203_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 83 $field := 1 $x_dung := 9 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_203_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 83 $field := 1 $x_dung := 9 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_203_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 83 $field := 1 $x_dung := 9 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_204:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 84? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos10 $k_pos2 := $kanten_pos9 J(feld_209_204) P(nichts)
+    - $old_field == 85?  $k_pos1  &= 16384  $first := 0   J(feld_209_204_1) P(nichts)
+    - $old_field == 94?  $k_pos1  &= 32768  $first := 0  J(feld_209_204_2) P(nichts)
+    - $old_field == 83?  $k_pos1  &= 4096  $first := 0   J(feld_209_204_3) P(nichts)
+    - $old_field == 74?  $k_pos2  &= 4096  $first := 0   J(feld_209_204_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_209_204_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 84 $field := 1 $x_dung := 9 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_204_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 84 $field := 1 $x_dung := 9 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_204_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 84 $field := 1 $x_dung := 9 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_204_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 84 $field := 1 $x_dung := 9 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_205:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 85? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 $k_pos2 := $kanten_pos10 $k_pos3 := $kanten_pos9 J(feld_209_205) P(nichts)
+    - $old_field == 86?  $k_pos1  &= 1  $first := 0   J(feld_209_205_1) P(nichts)
+    - $old_field == 95?  $k_pos1  &= 2  $first := 0  J(feld_209_205_2) P(nichts)
+    - $old_field == 84?  $k_pos2  &= 16384  $first := 0   J(feld_209_205_3) P(nichts)
+    - $old_field == 75?  $k_pos3  &= 16384  $first := 0   J(feld_209_205_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_209_205_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 85 $field := 1 $x_dung := 9 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_205_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 85 $field := 1 $x_dung := 9 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_205_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 85 $field := 1 $x_dung := 9 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_205_4:
+    - $ini == 1? $k_pos3 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos3 >0? $old_field := 85 $field := 1 $x_dung := 9 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_206:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 86? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 $k_pos2 := $kanten_pos10 J(feld_209_206) P(nichts)
+    - $old_field == 87?  $k_pos1  &= 4  $first := 0   J(feld_209_206_1) P(nichts)
+    - $old_field == 96?  $k_pos1  &= 8  $first := 0  J(feld_209_206_2) P(nichts)
+    - $old_field == 85?  $k_pos1  &= 1  $first := 0   J(feld_209_206_3) P(nichts)
+    - $old_field == 76?  $k_pos2  &= 1  $first := 0   J(feld_209_206_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_209_206_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 86 $field := 1 $x_dung := 9 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_206_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 86 $field := 1 $x_dung := 9 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_206_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 86 $field := 1 $x_dung := 9 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_206_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 86 $field := 1 $x_dung := 9 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_207:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 87? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 $k_pos2 := $kanten_pos10 J(feld_209_207) P(nichts)
+    - $old_field == 88?  $k_pos1  &= 16  $first := 0   J(feld_209_207_1) P(nichts)
+    - $old_field == 97?  $k_pos1  &= 32  $first := 0  J(feld_209_207_2) P(nichts)
+    - $old_field == 86?  $k_pos1  &= 4  $first := 0   J(feld_209_207_3) P(nichts)
+    - $old_field == 77?  $k_pos2  &= 4  $first := 0   J(feld_209_207_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_209_207_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 87 $field := 1 $x_dung := 9 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_207_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 87 $field := 1 $x_dung := 9 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_207_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 87 $field := 1 $x_dung := 9 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_207_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 87 $field := 1 $x_dung := 9 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_208:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 88? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 $k_pos2 := $kanten_pos10 J(feld_209_208) P(nichts)
+    - $old_field == 89?  $k_pos1  &= 64  $first := 0   J(feld_209_208_1) P(nichts)
+    - $old_field == 98?  $k_pos1  &= 128  $first := 0  J(feld_209_208_2) P(nichts)
+    - $old_field == 87?  $k_pos1  &= 16  $first := 0   J(feld_209_208_3) P(nichts)
+    - $old_field == 78?  $k_pos2  &= 16  $first := 0   J(feld_209_208_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_209_208_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 88 $field := 1 $x_dung := 9 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_208_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 88 $field := 1 $x_dung := 9 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_208_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 88 $field := 1 $x_dung := 9 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_208_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 88 $field := 1 $x_dung := 9 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_209:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 89? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 $k_pos2 := $kanten_pos10 J(feld_209_209) P(nichts)
+    - $old_field == 90?  $k_pos1  &= 256  $first := 0   J(feld_209_209_1) P(nichts)
+    - $old_field == 99?  $k_pos1  &= 512  $first := 0  J(feld_209_209_2) P(nichts)
+    - $old_field == 88?  $k_pos1  &= 64  $first := 0   J(feld_209_209_3) P(nichts)
+    - $old_field == 79?  $k_pos2  &= 64  $first := 0   J(feld_209_209_4) P(nichts)
+    - $first := 0 P(too_far)
+    feld_209_209_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 89 $field := 1 $x_dung := 9 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_209_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 89 $field := 1 $x_dung := 9 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_209_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 89 $field := 1 $x_dung := 9 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_209_4:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 89 $field := 1 $x_dung := 9 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_210:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 90? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 $k_pos2 := $kanten_pos10 J(feld_209_210) P(nichts)
+    - $old_field == 100?  $k_pos1  &= 1024  $first := 0   J(feld_209_210_1) P(nichts)
+    - $old_field == 89? $k_pos1  &= 256  $first := 0   J(feld_209_210_2) P(nichts)
+    - $old_field == 80?  $k_pos2  &= 128 $first := 0   J(feld_209_210_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_209_210_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 90 $field := 1 $x_dung := 9 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_210_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 90 $field := 1 $x_dung := 9 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_209_210_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 90 $field := 1 $x_dung := 9 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_201:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 91? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 $k_pos2 := $kanten_pos10 J(feld_210_201) P(nichts)
+    - $old_field == 92? $k_pos1  &= 2048 $first := 0  J(feld_210_201_1) P(nichts)
+    - $old_field == 81? $k_pos2  &= 512 $first := 0   J(feld_210_201_2) P(nichts)
+    - $first := 0 P(too_far)
+    feld_210_201_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 91 $field := 1 $x_dung := 10 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_201_2:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 91 $field := 1 $x_dung := 10 $y_dung := 1 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_202:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 92? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 $k_pos2 := $kanten_pos10 J(feld_210_202) P(nichts)
+    - $old_field == 93? $k_pos1  &= 4096  $first := 0   J(feld_210_202_1) P(nichts)
+    - $old_field == 91?  $k_pos1  &= 2048  $first := 0   J(feld_210_202_2) P(nichts)
+    - $old_field == 82?  $k_pos2  &= 2048  $first := 0   J(feld_210_202_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_210_202_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 92 $field := 1 $x_dung := 10 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_202_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 92 $field := 1 $x_dung := 10 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_202_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 92 $field := 1 $x_dung := 10 $y_dung := 2 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_203:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 93? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 $k_pos2 := $kanten_pos10 J(feld_210_203) P(nichts)
+    - $old_field == 94? $k_pos1  &= 8192  $first := 0   J(feld_210_203_1) P(nichts)
+    - $old_field == 92?  $k_pos1  &= 4096  $first := 0   J(feld_210_203_2) P(nichts)
+    - $old_field == 83?  $k_pos2  &= 8192  $first := 0   J(feld_210_203_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_210_203_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 93 $field := 1 $x_dung := 10 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_203_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 93 $field := 1 $x_dung := 10 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_203_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 93 $field := 1 $x_dung := 10 $y_dung := 3 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_204:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 94? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 $k_pos2 := $kanten_pos10 J(feld_210_204) P(nichts)
+    - $old_field == 95? $k_pos1  &= 16384  $first := 0   J(feld_210_204_1) P(nichts)
+    - $old_field == 93?  $k_pos1  &= 8192  $first := 0   J(feld_210_204_2) P(nichts)
+    - $old_field == 84?  $k_pos2  &= 32768  $first := 0   J(feld_210_204_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_210_204_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 94 $field := 1 $x_dung := 10 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_204_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 94 $field := 1 $x_dung := 10 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_204_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 94 $field := 1 $x_dung := 10 $y_dung := 4 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_205:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 95? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos11 J(feld_210_205) P(nichts)
+    - $old_field == 96? $k_pos1  &= 32768  $first := 0   J(feld_210_205_1) P(nichts)
+    - $old_field == 94?  $k_pos1  &= 16384  $first := 0   J(feld_210_205_2) P(nichts)
+    - $old_field == 85?  $k_pos1  &= 2  $first := 0   J(feld_210_205_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_210_205_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 95 $field := 1 $x_dung := 10 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_205_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 95 $field := 1 $x_dung := 10 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_205_3:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 95 $field := 1 $x_dung := 10 $y_dung := 5 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_206:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 96? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos12 $k_pos2 := $kanten_pos11 J(feld_210_206) P(nichts)
+    - $old_field == 97? $k_pos1  &= 1  $first := 0   J(feld_210_206_1) P(nichts)
+    - $old_field == 95?  $k_pos2  &= 32768  $first := 0   J(feld_210_206_2) P(nichts)
+    - $old_field == 86?  $k_pos2  &= 8  $first := 0   J(feld_210_206_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_210_206_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 96 $field := 1 $x_dung := 10 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_206_2:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 96 $field := 1 $x_dung := 10 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_206_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 96 $field := 1 $x_dung := 10 $y_dung := 6 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_207:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 97? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos12 $k_pos2 := $kanten_pos11 J(feld_210_207) P(nichts)
+    - $old_field == 98? $k_pos1  &= 2  $first := 0   J(feld_210_207_1) P(nichts)
+    - $old_field == 96?  $k_pos1  &= 1  $first := 0   J(feld_210_207_2) P(nichts)
+    - $old_field == 87?  $k_pos2  &= 32  $first := 0   J(feld_210_207_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_210_207_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 97 $field := 1 $x_dung := 10 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_207_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 97 $field := 1 $x_dung := 10 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_207_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 97 $field := 1 $x_dung := 10 $y_dung := 7 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_208:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 98? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos12 $k_pos2 := $kanten_pos11 J(feld_210_208) P(nichts)
+    - $old_field == 99? $k_pos1  &= 4  $first := 0   J(feld_210_208_1) P(nichts)
+    - $old_field == 97?  $k_pos1  &= 2  $first := 0   J(feld_210_208_2) P(nichts)
+    - $old_field == 88?  $k_pos2  &= 128  $first := 0   J(feld_210_208_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_210_208_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 98 $field := 1 $x_dung := 10 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_208_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 98 $field := 1 $x_dung := 10 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_208_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 98 $field := 1 $x_dung := 10 $y_dung := 8 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_209:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 99? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos12 $k_pos2 := $kanten_pos11 J(feld_210_209) P(nichts)
+    - $old_field == 100? $k_pos1  &= 8  $first := 0   J(feld_210_209_1) P(nichts)
+    - $old_field == 98?  $k_pos1  &= 4  $first := 0   J(feld_210_209_2) P(nichts)
+    - $old_field == 89?  $k_pos2  &= 512  $first := 0   J(feld_210_209_3) P(nichts)
+    - $first := 0 P(too_far)
+    feld_210_209_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 99 $field := 1 $x_dung := 10 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_209_2:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 99 $field := 1 $x_dung := 10 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_209_3:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 99 $field := 1 $x_dung := 10 $y_dung := 9 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_210:
+    - $dungeon == 0? P(not_in_dungeon)
+    - $old_field == 100? $field := 1 J(final_a) P(nichts)
+    - $first == 0? $first :=1  $k_pos1 := $kanten_pos12 $k_pos2 := $kanten_pos11 J(feld_210_210) P(nichts)
+    - $old_field == 90?  $k_pos1  &= 1024  $first := 0  J(feld_210_210_1) P(nichts)
+    - $old_field == 99? $k_pos2  &= 8  $first := 0  J(feld_210_210_2) P(nichts)
+    - $first := 0 P(too_far)
+    feld_210_210_1:
+    - $ini == 1? $k_pos1 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos1 >0? $old_field := 100 $field := 1 $x_dung := 10 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    feld_210_210_2:
+    - $ini == 1? $k_pos2 ==0?   $test2 +=1 J(random_move) P(nichts)
+    - $ini == 1? J(execute_move) P(nichts)
+    - $k_pos2 >0? $old_field := 100 $field := 1 $x_dung := 10 $y_dung := 10 J(final_a) P(nichts)
+    -  P(wand)
+    final_a:
+    - $dungeon == 1? $rnd7*=24173 $rnd7+=18849 $rnd8:= $rnd7 $old_field_storage := $old_field J(dungeon_fun1)  P(step)
+    - $dungeon == 2? $rnd7*=24173 $rnd7+=18849 $rnd8:= $rnd7 $old_field_storage := $old_field J(dungeon_fun2)  P(step)
+    - P(step)
+    
+    reset_dungeon:
+    - $first == 0? $first := 1 $kanten_pos1 := 0 $kanten_pos2 := 0 $kanten_pos3 := 0 $kanten_pos4 := 0 J(reset_dungeon) P(nichts)
+    - $first == 1? $first := 2 $kanten_pos5 := 0 $kanten_pos6 := 0 $kanten_pos7 := 0 $kanten_pos8 := 0 J(reset_dungeon) P(nichts)
+    - $first == 2? $first := 3 $kanten_pos9 := 0 $kanten_pos10 := 0 $kanten_pos11 := 0 $kanten_pos12 := 0 J(reset_dungeon) P(nichts)
+    -  $ini := 0 $fight := 0 $first := 0 J(dungeon_distributor) P(nichts)
+    
+    dungeon_distributor: 
+    - $dungeon == 1? J(dungeon1_2) P(nichts)
+    - $dungeon == 2? J(dungeon2_2) P(nichts)
+    
+    bariere_check:
+    - $temp_x_foe == 1? J(bariere_check1) P(nichts) 
+    - $temp_x_foe == 2? J(bariere_check2) P(nichts) 
+    - $temp_x_foe == 3? J(bariere_check3) P(nichts) 
+    - $temp_x_foe == 4? J(bariere_check4) P(nichts) 
+    - $temp_x_foe == 5? J(bariere_check5) P(nichts) 
+    - $temp_x_foe == 6? J(bariere_check6) P(nichts) 
+    - $temp_x_foe == 7? J(bariere_check7) P(nichts) 
+    - $temp_x_foe == 8? J(bariere_check8) P(nichts) 
+    - $temp_x_foe == 9? J(bariere_check9) P(nichts) 
+    - $temp_x_foe == 10? J(bariere_check10) P(nichts) 
+    bariere_check1:
+    - $temp_y_foe == 1? J(feld_201_201) P(step_short) 
+    - $temp_y_foe == 2? J(feld_201_202) P(step_short) 
+    - $temp_y_foe == 3? J(feld_201_203) P(step_short) 
+    - $temp_y_foe == 4? J(feld_201_204) P(step_short) 
+    - $temp_y_foe == 5? J(feld_201_205) P(step_short) 
+    - $temp_y_foe == 6? J(feld_201_206) P(step_short) 
+    - $temp_y_foe == 7? J(feld_201_207) P(step_short) 
+    - $temp_y_foe == 8? J(feld_201_208) P(step_short) 
+    - $temp_y_foe == 9? J(feld_201_209) P(step_short) 
+    - $temp_y_foe == 10? J(feld_201_210) P(step_short) 
+    bariere_check2:
+    - $temp_y_foe == 1? J(feld_202_201) P(step_short) 
+    - $temp_y_foe == 2? J(feld_202_202) P(step_short) 
+    - $temp_y_foe == 3? J(feld_202_203) P(step_short) 
+    - $temp_y_foe == 4? J(feld_202_204) P(step_short) 
+    - $temp_y_foe == 5? J(feld_202_205) P(step_short) 
+    - $temp_y_foe == 6? J(feld_202_206) P(step_short) 
+    - $temp_y_foe == 7? J(feld_202_207) P(step_short) 
+    - $temp_y_foe == 8? J(feld_202_208) P(step_short) 
+    - $temp_y_foe == 9? J(feld_202_209) P(step_short) 
+    - $temp_y_foe == 10? J(feld_202_210) P(step_short) 
+    bariere_check3:
+    - $temp_y_foe == 1? J(feld_203_201) P(step_short) 
+    - $temp_y_foe == 2? J(feld_203_202) P(step_short) 
+    - $temp_y_foe == 3? J(feld_203_203) P(step_short) 
+    - $temp_y_foe == 4? J(feld_203_204) P(step_short) 
+    - $temp_y_foe == 5? J(feld_203_205) P(step_short) 
+    - $temp_y_foe == 6? J(feld_203_206) P(step_short) 
+    - $temp_y_foe == 7? J(feld_203_207) P(step_short) 
+    - $temp_y_foe == 8? J(feld_203_208) P(step_short) 
+    - $temp_y_foe == 9? J(feld_203_209) P(step_short) 
+    - $temp_y_foe == 10? J(feld_203_210) P(step_short) 
+    bariere_check4:
+    - $temp_y_foe == 1? J(feld_204_201) P(step_short) 
+    - $temp_y_foe == 2? J(feld_204_202) P(step_short) 
+    - $temp_y_foe == 3? J(feld_204_203) P(step_short) 
+    - $temp_y_foe == 4? J(feld_204_204) P(step_short) 
+    - $temp_y_foe == 5? J(feld_204_205) P(step_short) 
+    - $temp_y_foe == 6? J(feld_204_206) P(step_short) 
+    - $temp_y_foe == 7? J(feld_204_207) P(step_short) 
+    - $temp_y_foe == 8? J(feld_204_208) P(step_short) 
+    - $temp_y_foe == 9? J(feld_204_209) P(step_short) 
+    - $temp_y_foe == 10? J(feld_204_210) P(step_short) 
+    bariere_check5:
+    - $temp_y_foe == 1? J(feld_205_201) P(step_short) 
+    - $temp_y_foe == 2? J(feld_205_202) P(step_short) 
+    - $temp_y_foe == 3? J(feld_205_203) P(step_short) 
+    - $temp_y_foe == 4? J(feld_205_204) P(step_short) 
+    - $temp_y_foe == 5? J(feld_205_205) P(step_short) 
+    - $temp_y_foe == 6? J(feld_205_206) P(step_short) 
+    - $temp_y_foe == 7? J(feld_205_207) P(step_short) 
+    - $temp_y_foe == 8? J(feld_205_208) P(step_short) 
+    - $temp_y_foe == 9? J(feld_205_209) P(step_short) 
+    - $temp_y_foe == 10? J(feld_205_210) P(step_short) 
+    bariere_check6:
+    - $temp_y_foe == 1? J(feld_206_201) P(step_short) 
+    - $temp_y_foe == 2? J(feld_206_202) P(step_short) 
+    - $temp_y_foe == 3? J(feld_206_203) P(step_short) 
+    - $temp_y_foe == 4? J(feld_206_204) P(step_short) 
+    - $temp_y_foe == 5? J(feld_206_205) P(step_short) 
+    - $temp_y_foe == 6? J(feld_206_206) P(step_short) 
+    - $temp_y_foe == 7? J(feld_206_207) P(step_short) 
+    - $temp_y_foe == 8? J(feld_206_208) P(step_short) 
+    - $temp_y_foe == 9? J(feld_206_209) P(step_short) 
+    - $temp_y_foe == 10? J(feld_206_210) P(step_short) 
+    bariere_check7:
+    - $temp_y_foe == 1? J(feld_207_201) P(step_short) 
+    - $temp_y_foe == 2? J(feld_207_202) P(step_short) 
+    - $temp_y_foe == 3? J(feld_207_203) P(step_short) 
+    - $temp_y_foe == 4? J(feld_207_204) P(step_short) 
+    - $temp_y_foe == 5? J(feld_207_205) P(step_short) 
+    - $temp_y_foe == 6? J(feld_207_206) P(step_short) 
+    - $temp_y_foe == 7? J(feld_207_207) P(step_short) 
+    - $temp_y_foe == 8? J(feld_207_208) P(step_short) 
+    - $temp_y_foe == 9? J(feld_207_209) P(step_short) 
+    - $temp_y_foe == 10? J(feld_207_210) P(step_short) 
+    bariere_check8:
+    - $temp_y_foe == 1? J(feld_208_201) P(step_short) 
+    - $temp_y_foe == 2? J(feld_208_202) P(step_short) 
+    - $temp_y_foe == 3? J(feld_208_203) P(step_short) 
+    - $temp_y_foe == 4? J(feld_208_204) P(step_short) 
+    - $temp_y_foe == 5? J(feld_208_205) P(step_short) 
+    - $temp_y_foe == 6? J(feld_208_206) P(step_short) 
+    - $temp_y_foe == 7? J(feld_208_207) P(step_short) 
+    - $temp_y_foe == 8? J(feld_208_208) P(step_short) 
+    - $temp_y_foe == 9? J(feld_208_209) P(step_short) 
+    - $temp_y_foe == 10? J(feld_208_210) P(step_short) 
+    bariere_check9:
+    - $temp_y_foe == 1? J(feld_209_201) P(step_short) 
+    - $temp_y_foe == 2? J(feld_209_202) P(step_short) 
+    - $temp_y_foe == 3? J(feld_209_203) P(step_short) 
+    - $temp_y_foe == 4? J(feld_209_204) P(step_short) 
+    - $temp_y_foe == 5? J(feld_209_205) P(step_short) 
+    - $temp_y_foe == 6? J(feld_209_206) P(step_short) 
+    - $temp_y_foe == 7? J(feld_209_207) P(step_short) 
+    - $temp_y_foe == 8? J(feld_209_208) P(step_short) 
+    - $temp_y_foe == 9? J(feld_209_209) P(step_short) 
+    - $temp_y_foe == 10? J(feld_209_210) P(step_short) 
+    bariere_check10:
+    - $temp_y_foe == 1? J(feld_210_201) P(step_short) 
+    - $temp_y_foe == 2? J(feld_210_202) P(step_short) 
+    - $temp_y_foe == 3? J(feld_210_203) P(step_short) 
+    - $temp_y_foe == 4? J(feld_210_204) P(step_short) 
+    - $temp_y_foe == 5? J(feld_210_205) P(step_short) 
+    - $temp_y_foe == 6? J(feld_210_206) P(step_short) 
+    - $temp_y_foe == 7? J(feld_210_207) P(step_short) 
+    - $temp_y_foe == 8? J(feld_210_208) P(step_short) 
+    - $temp_y_foe == 9? J(feld_210_209) P(step_short) 
+    - $temp_y_foe == 10? J(feld_210_210) P(step_short) 
+    
+    # zahl ausgabe
+    einer:
+    - $ziffer == 0?               J(einer_return) P(nichts)
+    - $ziffer == 1?  P(ein)       J(einer_return) P(nichts)
+    - $ziffer == 2?  P(2)      J(einer_return) P(nichts)
+    - $ziffer == 3?  P(3)      J(einer_return) P(nichts)
+    - $ziffer == 4?  P(4)      J(einer_return) P(nichts)
+    - $ziffer == 5?  P(5)     J(einer_return) P(nichts)
+    - $ziffer == 6?  P(6)     J(einer_return) P(nichts)
+    - $ziffer == 7?  P(7)    J(einer_return) P(nichts)
+    - $ziffer == 8?  P(8)      J(einer_return) P(nichts)
+    - $ziffer == 9?  P(9)      J(einer_return) P(nichts)
+    - $ziffer == 10? P(10)      J(einer_return) P(nichts)
+    - $ziffer == 11? P(11)       J(einer_return) P(nichts)
+    - $ziffer == 12? P(12)    J(einer_return) P(nichts)
+    - $ziffer == 13? P(13)  J(einer_return) P(nichts)
+    - $ziffer == 14? P(14)  J(einer_return) P(nichts)
+    - $ziffer == 15? P(15) J(einer_return) P(nichts)
+    - $ziffer == 16? P(16)  J(einer_return) P(nichts)
+    - $ziffer == 17? P(17)  J(einer_return) P(nichts)
+    - $ziffer == 18? P(18)  J(einer_return) P(nichts)
+    - $ziffer == 19? P(19)  J(einer_return) P(nichts)
+
+    einer_return:
+    - $einer_return == 0? #fertig 
+    - $einer_return == 1? J(und_zig) P(nichts)
+    - $einer_return == 2? J(zweistellig_return) P(nichts)
+    - $einer_return == 3? J(hundert) P(nichts)
+
+  # bis 99
+    zweistellig:
+    - $zweistellig < 20? $ziffer := $zweistellig  $einer_return :=2 J(einer) P(nichts)
+    - $zehner:=$zweistellig $zehner/=10 $ziffer := $zweistellig $ziffer %= 10 J(zweistellig2) P(nichts)
+
+    zweistellig2:
+    - $ziffer == 0? J(zig) P(nichts)
+    - $einer_return := 1 J(einer) P(nichts)
+
+    und_zig: P(und) J(zig) P(nichts)
+
+    zig:
+    - $zehner == 2?  P(zwanzig)   J(zweistellig_return) P(nichts)
+    - $zehner == 3?  P(dreissig)  J(zweistellig_return) P(nichts)
+    - $zehner == 4?  P(vierzig)   J(zweistellig_return) P(nichts)
+    - $zehner == 5?  P(fuenfzig)  J(zweistellig_return) P(nichts)
+    - $zehner == 6?  P(sechzig)   J(zweistellig_return) P(nichts)
+    - $zehner == 7?  P(siebzig)   J(zweistellig_return) P(nichts)
+    - $zehner == 8?  P(achtzig)   J(zweistellig_return) P(nichts)
+    - $zehner == 9?  P(neunzig)   J(zweistellig_return) P(nichts)
+
+
+    zweistellig_return:
+    - $zweistellig_return == 0? # fertig
+    - $zweistellig_return == 1? J(tausend) P(nichts)
+
+    dreistellig:
+    - $dreistellig < 100? $zweistellig := $dreistellig $zweistellig_return := 0 J(zweistellig) P(nichts)
+    - $ziffer := $dreistellig $ziffer /= 100 $zweistellig := $dreistellig $zweistellig %= 100 $einer_return := 3 J(einer) P(nichts)
+
+    hundert: P(hundert) $zweistellig_return := 0 J(zweistellig) P(nichts)
+
+    sag_zahl:
+    - $zahl == 0? P(0)
+    - $zahl == 1? P(1)
+    - $zahl < 1000? $dreistellig := $zahl J(dreistellig) P(nichts)
+    - $zweistellig := $zahl $zweistellig /= 1000 $dreistellig := $zahl $dreistellig %= 1000 $zweistellig_return := 1 J(zweistellig) P(nichts)
+
+    tausend: 
+    - P(tausend) J(dreistellig) P(nichts)
+
+speak:    
+   # nichts: ""
+    auf_feld_66: "auf feld 66 erscheint eine ratte"
+    auf_feld_50:  "auf feld 50 erscheint eine ratte"
+    ratte_erscheint: "quieek"
+    spieler_dran: "du bist jetzt dran"
+    unten_g: "dein gegner geht nach unten"
+    links_g: "dein gegner geht nach links"
+    rechts_g: "dein gegner geht nach rechts"
+    oben_g: "dein gegner geht nach oben"
+    not_in_dungeon: " du befindest dich nicht in einem dungeon"
+    wand: "kein durchgang"
+    check: "check"
+    Position_Gegner_Feld: "Feld"
+    Position_Spieler_Feld: "Feld"
+    dit: "dit"
+    #step: "step"
+    0: "0"
+    1: "1"
+    2: "2"
+    3: "3"
+    4: "4"
+    5: "5"
+    6: "6"
+    7: "7"
+    8: "8"
+    9: "9"
+    10: "10"
+    11: "11"
+    12: "12"
+    13: "13"
+    14: "14"
+    15: "15"
+    16: "16"
+    17: "17"
+    18: "18"
+    19: "19"
+    zwanzig: "zwanzig"
+    dreissig: "dreissig"
+    vierzig: "vierzig"
+    fuenfzig: "fuenfzig"
+    sechzig: "sechzig"
+    siebzig: "siebzig"
+    achtzig: "achtzig"
+    neunzig: "neunzig"
+    und: "und"
+    hundert: "hundert"
+    tausend: "tausend"
+    ein: "ein"
+    willkommen: "Hallo"
+    too_far: "zu weit weg"
+    selbes_Feld: "ihr befindet euch auf dem selben Feld"
+    kein_kampf: "es gibt keinen Gegner"
+    kein_dungeon: "du befindest dich nicht in einem Dungeon"
+    dung_1: "du betritts eine höhle, starte auf Feld 1"
+    dung_2: "du betritts eine höhle, starte auf Feld 61. Finde den schatz auf feld 45 und bringe ihn zum startpunkt bevor dich die höhlenratte erreicht"
+    gewonnen: "du hast es geschafft"
+    info_dung2_3: "komm zurück wenn du den schatz gefunden hast"
+    schalter: "an der Wand ist ein schalter angebracht. nachdem du ihn betätigst hast hörst du ein rattern rechts von dir"
+    schatz: "du hast den schatz gefunden jetzt schnell zum ausgang"
+    info_dung2: "du kannst nach links oder nach unten gehen. nach oben versperrt ein Fallgitter den Gang"
+    info_dung2_2: "der gang nach unten Richtung ausgang wird noch immer durch ein fallgitter versperrt, ob es irgendwo einen schalter gibt"
+    teleport: "ein portal zieht dich ein und entlässt dich auf feld"
+    46: "46"
+    verloren: "verloren die ratte hat dich erwischt"
+    
+scriptcodes:
+   dungeon1: 1160
+   reset_dungeon: 1157
+   feld_201_201: 1501
+   feld_201_202: 1502
+   feld_201_203: 1503
+   feld_201_204: 1504
+   feld_201_205: 1505
+   feld_201_206: 1506
+   feld_201_207: 1507
+   feld_201_208: 1508
+   feld_201_209: 1509
+   feld_201_210: 1510
+   feld_202_201: 1511
+   feld_202_202: 1512
+   feld_202_203: 1513
+   feld_202_204: 1514
+   feld_202_205: 1515
+   feld_202_206: 1516
+   feld_202_207: 1517
+   feld_202_208: 1518
+   feld_202_209: 1519
+   feld_202_210: 1520
+   feld_203_201: 1521
+   feld_203_202: 1522
+   feld_203_203: 1523
+   feld_203_204: 1524
+   feld_203_205: 1525
+   feld_203_206: 1526
+   feld_203_207: 1527
+   feld_203_208: 1528
+   feld_203_209: 1529
+   feld_203_210: 1530
+   feld_204_201: 1531
+   feld_204_202: 1532
+   feld_204_203: 1533
+   feld_204_204: 1534
+   feld_204_205: 1535
+   feld_204_206: 1536
+   feld_204_207: 1537
+   feld_204_208: 1538
+   feld_204_209: 1539
+   feld_204_210: 1540
+   feld_205_201: 1541
+   feld_205_202: 1542
+   feld_205_203: 1543
+   feld_205_204: 1544
+   feld_205_205: 1545
+   feld_205_206: 1546
+   feld_205_207: 1547
+   feld_205_208: 1548
+   feld_205_209: 1549
+   feld_205_210: 1550
+   feld_206_201: 1551
+   feld_206_202: 1552
+   feld_206_203: 1553
+   feld_206_204: 1554
+   feld_206_205: 1555
+   feld_206_206: 1556
+   feld_206_207: 1557
+   feld_206_208: 1558
+   feld_206_209: 1559
+   feld_206_210: 1560
+   feld_207_201: 1561
+   feld_207_202: 1562
+   feld_207_203: 1563
+   feld_207_204: 1564
+   feld_207_205: 1565
+   feld_207_206: 1566
+   feld_207_207: 1567
+   feld_207_208: 1568
+   feld_207_209: 1569
+   feld_207_210: 1570
+   feld_208_201: 1571
+   feld_208_202: 1572
+   feld_208_203: 1573
+   feld_208_204: 1574
+   feld_208_205: 1575
+   feld_208_206: 1576
+   feld_208_207: 1577
+   feld_208_208: 1578
+   feld_208_209: 1579
+   feld_208_210: 1580
+   feld_209_201: 1581
+   feld_209_202: 1582
+   feld_209_203: 1583
+   feld_209_204: 1584
+   feld_209_205: 1585
+   feld_209_206: 1586
+   feld_209_207: 1587
+   feld_209_208: 1588
+   feld_209_209: 1589
+   feld_209_210: 1590
+   feld_210_201: 1591
+   feld_210_202: 1592
+   feld_210_203: 1593
+   feld_210_204: 1594
+   feld_210_205: 1595
+   feld_210_206: 1596
+   feld_210_207: 1597
+   feld_210_208: 1598
+   feld_210_209: 1599
+   feld_210_210: 1600
+   say_x_foe: 1201
+   say_y_foe: 1202
+   say_x_fight: 1203
+   say_y_fight: 1204
+   dungeon2: 1158
