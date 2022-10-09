@@ -1,10 +1,12 @@
 # Tiptoi_Dungeon
++++++ Bugs wahrscheinlich +++++
+
 
 ## Intro
-Der Code ist ein Teil von dem Rollenspiel ("Der Schattenkönig") für den Tiptoi. Mit dem Code wird ein 10x10 Felder Spielfeld definiert auf dem man beliebig Dungeons, Höhlen, Häuser oder andere Innenräume definieren kann. Sobald man auf dem Hauptspielplan ein Dungeon betritt wechselt man auf das Dungeonspielfeld. Das Konzept sieht vor, dass der Spielplan mit einer durchsichtigen Folie (z.B. eine Klarsichthülle) abgedeckt ist und die Spieler das Dungeon schrittweise durch tippen mit dem Stift erkunden. Dabei können Mauern und wichtige Orte schrittweise mit einem abwaschbaren Stift markiert werden. Alternativ können die Dungeons mit einer Schablone markiert werden. Um es einfach zu halten kann man nur nach oben, unten, rechts und links und nicht diagonal gehen. Die Sprachausgabe für z.B die jeweilige Position kommt von dem Tiptoi Taschhenrechner 
+Der Code ist ein Teil von dem Rollenspiel ("Der Schattenkönig") für den Tiptoi. Mit dem Code wird ein 10x10 Felder Spielfeld definiert auf dem man beliebig Dungeons, Höhlen, Häuser oder andere Innenräume definieren kann. Sobald man auf dem Hauptspielplan ein Dungeon betritt wechselt man auf das Dungeonspielfeld. Das Konzept sieht vor, dass der Spielplan mit einer durchsichtigen Folie (z.B. eine Klarsichthülle) abgedeckt ist und die Spieler das Dungeon schrittweise durch tippen mit dem Stift erkunden. Dabei können Mauern und wichtige Orte schrittweise mit einem abwaschbaren Stift markiert werden. Alternativ können die Dungeons mit einer Schablone markiert werden. Um es einfach zu halten kann man nur nach oben, unten, rechts und links und nicht diagonal gehen. Die Sprachausgabe für Zahlen (z.B die jeweilige Position) stammt aus dem [Tiptoi Taschhenrechner](https://bitbucket.org/nomeata/tiptoi-taschenrechner/src/master/) von Joachim Breitner. Das Rollenspielprojekt befindet sich noch in einer pre Alpha-Version und es gibt bis jetzt nur "Text-To-Speech" Audiodateien.
 
-## Konzept
-Durch Tippen auf ein Feld wird eine Funktion gestartet die checkt ob man bereits auf dem Feld steht, von einem direkten Nachbarfeld kommt oder von einem weiter entfernten Feld. Dazu hat jedes Feld y und y Koordinaten und eine Nummer.
+## Konzept Spielfeld
+Durch Tippen auf ein Feld wird eine Funktion gestartet die checkt ob man bereits auf dem Feld steht, von einem direkten Nachbarfeld kommt oder von einem weiter entfernten Feld. Dazu hat jedes Feld x und y Koordinaten und eine Nummer.
 
   - Gleiches Feld: Bestättigungston (Schritte) + check ob das Feld spezielle Ereignisse triggert 
   - Entferntes Feld / diagonles Feld: Warnung (zu weit weg), keine Änderung der Koordinaten 
@@ -34,7 +36,14 @@ $test == 0? # Kante zu
 <sub>Abbildung 1: Beispiel für Kantenkodierung
 </sub>
 
+## Konzept Gegner 
+In einem Dungeon kann ein einzelner Gegner auftauchen, der sich immer in Richtung des Spielers bewegt. Eine einfache Wegfindung sorgt dafür, dass der Gegner nicht durch Wände läuft (dafür nimmt sich der Tiptoi allerdings ein paar Gedenksekunden), und immer zuerst in die Richtungachse geht, auf der er die größte Distanz zum Spieler hat (bei gleicher Distanz entscheidet der Zufall). Das kampfsystem des Rollenspiels ist in diesem Dungeon-Beispiel nicht integriert.  
 
+## Beispiele
+In diesem Code sind 3 Dungeonbeispiele integriert. 
+
+### Dungeon 1 (einfaches Bewegungsbeispiel)
+Das Dungeon wird durch das tippen auf 
 
 <p align="center">
   <img src="https://github.com/JG55JG/Tiptoi_Dungeon/blob/main/pictures/dungeon.example.png"/ width="35%" >
