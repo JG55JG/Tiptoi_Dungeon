@@ -37,7 +37,7 @@ $test == 0? # Kante zu
 </sub>
 
 ## Konzept Gegner 
-In einem Dungeon kann ein einzelner Gegner auftauchen, der sich immer in Richtung des Spielers bewegt. Eine einfache Wegfindung sorgt dafür, dass der Gegner nicht durch Wände läuft (dafür nimmt sich der Tiptoi allerdings ein paar Gedenksekunden), und immer zuerst in die Richtungachse geht, auf der er die größte Distanz zum Spieler hat (bei gleicher Distanz entscheidet der Zufall). Das kampfsystem des Rollenspiels ist in diesem Dungeon-Beispiel nicht integriert. Die Position des Gegners wird am besten mit einem Plättchen oder einer Spielfigur dargestellt. 
+In einem Dungeon kann ein einzelner Gegner auftauchen, der sich immer in Richtung des Spielers bewegt. Eine einfache Wegfindung sorgt dafür, dass der Gegner nicht durch Wände läuft (dafür nimmt sich der Tiptoi allerdings ein paar Gedenksekunden), und immer zuerst in die Richtungachse geht, auf der er die größte Distanz zum Spieler hat (bei gleicher Distanz entscheidet der Zufall). Das Kampfsystem des Rollenspiels ist in diesem Dungeon-Beispiel nicht integriert. Die Position des Gegners wird am besten mit einem Plättchen oder einer Spielfigur dargestellt. 
 
 ## Beispiele
 In diesem Code sind 2 Dungeonbeispiele integriert. 
