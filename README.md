@@ -9,7 +9,7 @@ Der Code ist ein Teil von dem Rollenspiel ("Der Schattenkönig") für den Tiptoi
 Durch Tippen auf ein Feld wird eine Funktion gestartet die checkt ob man bereits auf dem Feld steht, von einem direkten Nachbarfeld oder von einem weiter entfernten Feld kommt. Dazu hat jedes Feld x und y Koordinaten und eine Nummer.
 
   - Gleiches Feld: Bestättigungston (Schritte) + check ob das Feld spezielle Ereignisse triggert 
-  - Entferntes Feld / diagonles Feld: Warnung (zu weit weg), keine Änderung der Koordinaten 
+  - Entferntes Feld / diagonales Feld: Warnung (zu weit weg), keine Änderung der Koordinaten 
   - Nachbarfeld: Check ob es eine Mauer gibt
     - Mauer: Warnung (kein Durchgang) keine Änderung der Koordinaten
     - Keine Mauer: Bestättigungston (Schritte) + Änderung der Koordinaten + check ob das Feld spezielle Ereignisse triggert
