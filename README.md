@@ -40,7 +40,7 @@ $test == 0? # Kante zu
 In einem Dungeon kann ein einzelner Gegner auftauchen, der sich immer in Richtung des Spielers bewegt. Eine einfache Wegfindung sorgt dafür, dass der Gegner nicht durch Wände läuft (dafür nimmt sich der Tiptoi allerdings ein paar Gedenksekunden), und immer zuerst in die Richtungachse geht, auf der er die größte Distanz zum Spieler hat (bei gleicher Distanz entscheidet der Zufall). Das kampfsystem des Rollenspiels ist in diesem Dungeon-Beispiel nicht integriert.  
 
 ## Beispiele
-In diesem Code sind 3 Dungeonbeispiele integriert. 
+In diesem Code sind 2 Dungeonbeispiele integriert. 
 
 ### Dungeon 1 (einfaches Bewegungsbeispiel)
 Das Dungeon wird durch das tippen auf das "Dungeon 1" Feld gestartet. Das Dungeon ist nur zum ausprobieren der Bewegung und der Gegner Wegfindung gedacht. Start ist Feld 1, sobald man auf Feld 2 tritt erscheint eine Ratte auf Feld 50. Nach jedem Spielerzug startet automatisch der Zug des Gegners (dauert etwas) mit der Ansage in welche Richtung der Gegner geht.
