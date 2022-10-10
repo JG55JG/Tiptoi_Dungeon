@@ -142,7 +142,7 @@ scripts:
     feld_201_201:
     - $dungeon == 0? P(not_in_dungeon)
     - $old_field == 1? $field := 1 J(final_a) P(nichts)
-    - $first == 0? $first :=1 $rnd8 %= $test $k_pos1 := $kanten_pos1 J(feld_201_201) P(nichts)
+    - $first == 0? $first :=1 $k_pos1 := $kanten_pos1 J(feld_201_201) P(nichts)
     - $old_field == 2? $k_pos1  &= 1 $first := 0   J(feld_201_201_1) P(nichts)
     - $old_field == 11? $k_pos1  &= 2 $first := 0 J(feld_201_201_2) P(nichts)
     - $first := 0 P(too_far)
