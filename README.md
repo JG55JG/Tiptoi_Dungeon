@@ -90,7 +90,7 @@ Du lebst mit deinen Eltern auf einem kleinen Bauernhof in einem fruchtbaren Tal.
 
 ### Spielmechaniken
 - "Große" Rollenspielwelt mit mehreren Regionen, Hexfeld basiert.
-- Abspeichern und laden aller Fortschritte, Positionen, gefunden Gegenstände u.s.w
+- Abspeichern und laden aller Fortschritte, Positionen, gefundenen Gegenstände u.s.w
 - Zeitsystem mit Tag und Nachtrythmus. Nachts kann sich die Welt ändern. Manche Ereignisse finden nur zu einer definierten Zeit statt.
 - Gegenstände und Werkzeugsystem. Mehrere Gegenstände können zu einem neuen Gegenstand kombiniert werden
 - Würfelwurf basiertes Kampfsytem das mit Spezialattacken kombiniert wird. Für eine Spezialattacke gibt der Gegner eine zufällige bis zu 5 teilige Bewegungsserie vor (ala Simon says) die in einem einstellbaren Zeitintervall nachgetippt werden muss.
