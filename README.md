@@ -28,14 +28,14 @@ Durch Tippen auf ein Feld wird eine Funktion gestartet die checkt ob man bereits
     - Mauer: Warnung (kein Durchgang) keine Änderung der Koordinaten
     - Keine Mauer: Bestättigungston (Schritte) + Änderung der Koordinaten + check ob das Feld spezielle Ereignisse triggert
  
-Die Mauern/Kanten werden dazu per Bit encoding in Variablen/Registern gespeichert (0 = Mauer, 1= Frei). Jede Variable kann also die Information über 16 Kanten speichern. Die Zählung fängt dabei rechts oben an. Bei einem 10x10 Feld ist Kante 1 die Kante zwischen Feld 1 und Feld 2 (siehe Abbildung 1) und Kante 2 die Kante zwischen Feld 1 und Feld 11. Für das 6 Felder Dungeon in Abbildung 1 (markiert mit schwarzem Rahmen) müssen die Kanten 1 bis 6 im "roten" Kantenregister freigestellt werden und die Kanten 4, 6 und 8 im "blauen" Kantenregister. Mit bitwise AND wird dann gecheckt ob eine Kante frei ist oder nicht.
+Die Mauern/Kanten werden dazu per Bit encoding in Variablen/Registern gespeichert (0 = Mauer, 1= Frei). Jede Variable kann also die Information über 16 Kanten speichern. Die Zählung fängt dabei rechts oben an. Bei einem 10x10 Feld ist Kante 1 die Kante zwischen Feld 1 und Feld 2 (siehe Abbildung 1) und Kante 2 die Kante zwischen Feld 1 und Feld 11. Für das 6 Felder Dungeon in Abbildung 1 (markiert mit schwarzem Rahmen) müssen die Kanten 1,2,3,4,6 im "roten" Kantenregister freigestellt werden und die Kanten 4 und 6 im "blauen" Kantenregister. Mit bitwise AND wird dann gecheckt ob eine Kante frei ist oder nicht.
 
 ```
-# 1= 2^0 = 1, 2 = 2^1 = 2, 3 = 2^2 = 4 ,4 = 2^3 = 8, 5= 2^4 = 16, 6 = 2^5 = 32
-$Kante_rot := 63
+# 1= 2^0 = 1, 2 = 2^1 = 2, 3 = 2^2 = 4 ,4 = 2^3 = 8,  6 = 2^5 = 32
+$Kante_rot := 47
 
-# 4 = 2^3 =8, 6= 2^5 = 32, 8 = 2^7 = 128
-$Kante_blau := 168
+# 4 = 2^3 =8, 6= 2^5 = 32 
+$Kante_blau := 40
 
 # check ob Kante 4 in $Kante_rot frei ist
 $test :=  $Kante_rot $test &= 8
@@ -77,6 +77,18 @@ $kanten_pos9:=512
 Für Dungeon 2 ist kein Karte vorgegeben. Start ist auf Feld 61. Das Ziel ist den Schatz auf Feld 45 zu holen und ihn zurück zum Start zu bringen ohne von der Höhlenratte erwischt zu werden.
 
 ## How to zum erstellen von eigenen Dungeons
+Zum erstellen von Custom Dungeons kann man z.B die Dungeon 1 Funktion in der dungeon.yaml anpassen.
+
+```
+   dungeon1:
+    - $dungeon :=1 $old_field:= 1 $x_dung := 1 $y_dung := 1 $first := 1 J(reset_dungeon) P(nichts)
+    dungeon1_2:
+    - $first == 0?  T($rnd7,65535) $rnd7*=25173 $rnd7+=13849 $rnd8 := $rnd7 $first :=1  J(dungeon1_2) P(nichts)
+    - $first == 1? $first := 2 $kanten_pos1:=4085 $kanten_pos2:=24448 $kanten_pos3:=64512 $kanten_pos4:=41471 J(dungeon1_2) P(nichts)
+    - $first == 2? $first := 3 $kanten_pos5:=3770 $kanten_pos6:=4224 $kanten_pos7:=1504 $kanten_pos8:=1792 J(dungeon1_2) P(nichts)
+    - $kanten_pos9:=512 $dungeon_stack :=  0 $first := 0 P(dung_1)
+  ``` 
+   
 
 ## Teaser "Der Schattenkönig"
 Hier noch ein paar Infos zum finalen Rollenspiel. Alle Mechaniken sind schon programmiert und das 1. Kapitel ist hoffentlich bald fertig.
