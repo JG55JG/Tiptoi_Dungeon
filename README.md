@@ -13,6 +13,8 @@
 - [Teaser "Der Schattenkönig"](#Teaser-"Der-Schattenkönig")
   - [Story](#Story)
     - [Hintergrundgeschichte](#Hintergrundgeschichte)
+    - [Intro für Spieler](#Intro-für-Spieler)
+  - [Mechaniken](#Mechaniken)
 
 ## Intro
 Der Code ist ein Teil von dem Rollenspiel ("Der Schattenkönig") für den Tiptoi. Mit dem Code wird ein 10x10 Felder Spielfeld definiert auf dem man beliebig Dungeons, Höhlen, Häuser oder andere Innenräume definieren kann. Sobald man auf dem Hauptspielplan ein Dungeon betritt wechselt man auf das Dungeonspielfeld. Das Konzept sieht vor, dass der Spielplan mit einer durchsichtigen Folie (z.B. eine Klarsichthülle) abgedeckt ist und die Spieler das Dungeon schrittweise durch tippen mit dem Stift erkunden. Dabei können Mauern und wichtige Orte mit einem abwaschbaren Stift markiert werden. Alternativ können die Dungeons mit einer Schablone markiert werden. Um es einfach zu halten kann man nur nach oben, unten, rechts und links und nicht diagonal gehen. Die Sprachausgabe für Zahlen (z.B für die jeweilige Position) stammt aus dem [Tiptoi Taschenrechner](https://bitbucket.org/nomeata/tiptoi-taschenrechner/src/master/) von Joachim Breitner. Das Rollenspielprojekt befindet sich noch in einer pre Alpha-Version und es gibt bis jetzt nur "Text-To-Speech" Audiodateien.
