@@ -9,7 +9,8 @@
 - [Dungeon Beispiele](#Beispiele)
    - [Dungeon 1 (einfaches Bewegungsbeispiel)](#Dungeon-1-(einfaches-Bewegungsbeispiel))
    - [Dungeon 2 (einfaches Rätselbeispiel)](#Dungeon-2-(einfaches-Rätselbeispiel))
-
+- [How-to zum erstellen von eigenen Dungeons](#How-to-zum-erstellen-von-eigenen Dungeons)
+- [Teaser "Der Schattenkönig"](#Teaser-"Der-Schattenkönig")
 
 ## Intro
 Der Code ist ein Teil von dem Rollenspiel ("Der Schattenkönig") für den Tiptoi. Mit dem Code wird ein 10x10 Felder Spielfeld definiert auf dem man beliebig Dungeons, Höhlen, Häuser oder andere Innenräume definieren kann. Sobald man auf dem Hauptspielplan ein Dungeon betritt wechselt man auf das Dungeonspielfeld. Das Konzept sieht vor, dass der Spielplan mit einer durchsichtigen Folie (z.B. eine Klarsichthülle) abgedeckt ist und die Spieler das Dungeon schrittweise durch tippen mit dem Stift erkunden. Dabei können Mauern und wichtige Orte mit einem abwaschbaren Stift markiert werden. Alternativ können die Dungeons mit einer Schablone markiert werden. Um es einfach zu halten kann man nur nach oben, unten, rechts und links und nicht diagonal gehen. Die Sprachausgabe für Zahlen (z.B für die jeweilige Position) stammt aus dem [Tiptoi Taschenrechner](https://bitbucket.org/nomeata/tiptoi-taschenrechner/src/master/) von Joachim Breitner. Das Rollenspielprojekt befindet sich noch in einer pre Alpha-Version und es gibt bis jetzt nur "Text-To-Speech" Audiodateien.
@@ -71,3 +72,23 @@ $kanten_pos9:=512
 ### Dungeon 2 (einfaches Rätselbeispiel)
 Für Dungeon 2 ist kein Karte vorgegeben. Start ist auf Feld 61. Das Ziel ist den Schatz auf Feld 45 zu holen und ihn zurück zum Start zu bringen ohne von der Höhlenratte erwischt zu werden.
 
+## How to zum erstellen von eigenen Dungeons
+
+## Teaser "Der Schattenkönig"
+Hier noch ein paar Infos zum finalen Rollenspiel. Alle Mechaniken sind schon programmiert und das 1. Kapitel ist hoffentlich bald fertig.
+### Story
+#### Hintergrundgeschichte
+Vor langer Zeit lebten die Menschen friedlich und glücklich in einem kleinen Königreich. Doch die Frau des Königs starb an einer geheimnisvollen Krankheit und ließ zwei Kinder, Tami und Ora sowie den gütigen König allein zurück. Nach einiger Zeit erkrankte auch Ora an der Krankheit. Der König, der auch ein gelehrter Magier war, versuchte alles um sein Kind zu retten. Ora wurde immer kränker und er Vater immer verzweifelter. Als die Lage aussichtslos erschien, versuchte er sich schließlich an dunkler, verbotener Magie. Doch anstatt Ora zu retten geriet er in den Bann des Bösen und verfluchte sein ganzes Land und Ora zu einem ruhelosen Leben als Geisterwesen, den Schatten, halb im Land der Lebenden, halb im Land der Toten. Er selbst verfiel dem Bösen. In einem letzten Moment der Menschlichkeit erinnerte sich der König daran, dass er eigentlich nur seine Familie schützen wollte und legte sein zweites Kind Tami in einen langen Zauberschlaf der es vor allem Unheil bewahrte. Seitdem sind viele Jahrhunderte vergangen und an das alte Königreich kann sich niemand mehr erinnern. Nicht einmal Ruinen haben die Zeit überdauert.
+An der Stelle der Königsburg steht heute ein kleines Gehöft. Dort lebt ein Bauernpaar das ein Waisenkind aufgenommen hat, das sie in einer nahen Höhle gefunden hatten. Der Name des Kindes ist Tami.
+
+#### Intro für Spieler
+Du lebst mit deinen Eltern auf einem kleinen Bauernhof in einem fruchtbaren Tal. Es ist ein hartes aber glückliches Leben – während des Tages. Doch sobald die Sonne untergegangen ist erheben sich die Schatten, Geisterwesen schweben körperlos durch das Land und unterhalten sich wispernd in einer unbekannten Sprache. Zu dieser Zeit verstecken sich alle Menschen in ihren Häusern und schützen sich mit magischen Talismanen und Kräutern. Als wäre das noch nicht genug wuchs kurz vor deiner Geburt eine undurchdringliche Hecke um das Tal. Seit dieser Zeit hat kein Fremder mehr das Tal betreten und auch kein Bewohner des Tals dieses verlassen. Für dich ist das jedoch alles ganz normal, du kennst es ja nicht anders. Keiner kennt das Tal besser als du.
+
+### Spielmechaniken
+- "Große" Rollenspielwelt mit mehreren Regionen, Hexfeld basiert.
+- Abspeichern und laden aller Fortschritte, Positionen, gefunden Gegenstände u.s.w
+- Zeitsystem mit Tag und Nachtrythmus. Nachts kann sich die Welt ändern. Manche Ereignisse finden nur zu einer definierten Zeit statt.
+- Gegenstände und Werkzeugsystem. Mehrere Gegenstände können zu einem neuen Gegenstand kombiniert werden
+- Würfelwurf basiertes Kampfsytem das mit Spezialattacken kombiniert wird. Für eine Spezialattacke gibt der Gegner eine zufällige bis zu 5 teilige Bewegungsserie vor (ala Simon says) die in einem einstellbaren Zeitintervall nachgetippt werden muss.
+- Zauber und Spezialfertigkeiten System. Für Zauber müssen Zaubersprüche (Symbolserien) gelernt und eingegeben werden. 
+- Rätseldungeons, Minispiele (Schere-Stein-Papier, Mastermind, Angeln, usw)
