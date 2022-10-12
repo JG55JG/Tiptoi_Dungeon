@@ -106,6 +106,6 @@ Du lebst mit deinen Eltern auf einem kleinen Bauernhof in einem fruchtbaren Tal.
 - Abspeichern und laden aller Fortschritte, Positionen, gefundenen Gegenstände u.s.w
 - Zeitsystem mit Tag und Nachtrythmus. Nachts kann sich die Welt ändern. Manche Ereignisse finden nur zu einer definierten Zeit statt.
 - Gegenstände und Werkzeugsystem. Mehrere Gegenstände können zu einem neuen Gegenstand kombiniert werden
-- Würfelwurf basiertes Kampfsytem das mit Spezialattacken kombiniert wird. Für eine Spezialattacke gibt der Gegner eine zufällige bis zu 5 teilige Bewegungsserie vor (ala Simon says) die in einem einstellbaren Zeitintervall nachgetippt werden muss.
+- Würfelwurf basiertes Kampfsytem das mit Spezialattacken kombiniert wird. Für eine Spezialattacke gibt der Gegner eine zufällige bis zu 5 teilige Bewegungsserie vor die in einem einstellbaren Zeitintervall nachgetippt werden muss.
 - Zauber und Spezialfertigkeiten System. Für Zauber müssen Zaubersprüche (Symbolserien) gelernt und eingegeben werden. 
 - Rätseldungeons, Minispiele (Schere-Stein-Papier, Mastermind, Angeln, usw)
